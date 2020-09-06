@@ -19,12 +19,24 @@ public:
   TABessel(){}
   virtual ~TABessel(){}
 
-  // Bessel function of integer order
-  static double BesselJ(int n, double x); // integer order
-  static double BesselJ(double a, double x); // half integer order
-  // modified Bessel function: I_a(x) = i^{-a}*J_a(ix)
-  static double BesselI(int n, double x); // integer order
-  static double BesselI(double a, double x); // half integer order
+  /// the implementation here are directly taken from: Numerical Receipes in C
+  /// Bessel function of integer order
+  /// BesselJ0,1 are computed first. The other orders are calculated using the
+  /// the recurrence relations.
+  static double BesselJ0(double x);
+  static double BesselY0(double x);
+  static double BesselJ1(double x);
+  static double BesselY1(double x);
+  static double BesselJ(int n, double x); // half integer order
+  static double BesselY(int n, double x); // half integer order
+
+  // modified Bessel functions
+  static double BesselI0(double x);
+  static double BesselK0(double x);
+  static double BesselI1(double x);
+  static double BesselK1(double x);
+  static double BesselI(int n, double x);
+  static double BesselK(int n, double x);
 };
 
 #endif

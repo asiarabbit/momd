@@ -6,7 +6,7 @@
   are stored in arrays. Note that this is a mathematical tool class.
   \author SUN Yazhou, aisa.rabbit@163.com
   \date Created: 2020/07/08
-  \date Last modified: 2020/07/08 by SUN Yazhou
+  \date Last modified: 2020/07/19 by SUN Yazhou
   \copyright 2020 SUN Yazhou
   \copyright MOMD project, Anyang Normal University, IMP-CAS
 */
@@ -19,7 +19,7 @@ public:
   TALegendre(){}
   virtual ~TALegendre(){}
 
-  static double Legendre(double l, double m);
+  static double Legendre(int l, int m, double x);
 };
 
 #endif

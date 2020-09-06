@@ -38,7 +38,7 @@
 *.odt
 
 # text files || content
-#*.txt
+*.txt
 
 # ignore directories
 build*/*

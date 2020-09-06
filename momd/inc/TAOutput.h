@@ -6,23 +6,27 @@
   screen and into file. So this is a tool class, and basically a static class.
   \author SUN Yazhou, aisa.rabbit@163.com
   \date Created: 2020/07/09
-  \date Last modified: 2020/07/09 by SUN Yazhou
+  \date Last modified: 2020/09/06 by SUN Yazhou
   \copyright 2020 SUN Yazhou
   \copyright MOMD project, Anyang Normal University, IMP-CAS
 */
 
+#ifndef _TAOutput_h_
 #define _TAOutput_h_
-#define _TAOutput_h_
+
+#include <string>
+
+using std::string;
 
 class TAOutput{
 public:
   ~TAOutput(){}
 
   /// dedicated for printing all parts of the knockout c.s.
-  static void PrintKOCS(PrintParallelMOMDIS(int fl,
+  static void PrintKOCS(int fl,
     const double *sigmaStr_M, double sigmaStr,
     const double *sigmaDiff_M, double sigmaDiff,
-    const double *sigmaStrTotal_M, double sigmaTotal);
+    const double *sigmaTotal_M, double sigmaTotal);
   /// a file of two columns with file name being filename
   /// \param len: length of array x and y
   static void PrintToFile(int len, const double *x, const double *y,
