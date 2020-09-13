@@ -7,15 +7,15 @@
   This is a static class.
   \author SUN Yazhou, aisa.rabbit@163.com
   \date Created: 2020/07/25
-  \date Last modified: 2020/07/25 by SUN Yazhou
+  \date Last modified: 2020/09/10 by SUN Yazhou
   \copyright 2020 SUN Yazhou
   \copyright MOMD project, Anyang Normal University, IMP-CAS
 */
 
 #include <cstring>
+#include <catch2/catch.hpp>
 #include "TAFun.h"
 #include "TAEikonalPhase.h"
-#include "TAInterpolate.h"
 #include "TAFNN.h"
 #include "TABessel.h"
 #include "TAIntegral.h"
@@ -36,7 +36,7 @@ public:
   TAPhaseN(TAEikonalPhase *phase, double b) : p(phase), fB(b){}
 
   virtual double operator()(double q) const override{
-    const double pden = exp(-TAMath::sqr(q*p->fAlphaP)/4.);
+    const double pden = exp(-TAMath::sqr(q*p->fAlphaP)/4.); // nucleon size factor
     return q*
       TAFourier::Fourier2D(q, p->fNRP, p->fRP, p->fRhoP)*pden * // rhoPq
       TAFourier::Fourier2D(q, p->fNRT, p->fRT, p->fRhoT)*pden * // rhoTq
@@ -122,7 +122,7 @@ cdouble TAEikonalPhase::GetPhaseN(double b){
   // Romberg: compute integral \int_0^\infty{q*rhoP*rhoT*fNN*J0(qb)}
   // chiN is the integrand, over 0-500. fm
   return fSigmaNN/fourPi*(I+fAlphaNN) *
-    TAIntegral<double, TAPhaseN>::Romberg(TAPhaseN(this, b), 0., 500.);
+    TAIntegral<double, TAPhaseN>::Romberg(TAPhaseN(this, b), 0., 300.);
 } // end member function GetPhaseN
 
 /// \retval eikonal Coulumb phase = 2\eta*ln(kb)
@@ -139,3 +139,38 @@ double TAEikonalPhase::GetPhaseC(double b){
 cdouble TAEikonalPhase:: GetPhase(double b){
   return GetPhaseN(b) + GetPhaseC(b);
 } // end of memeber function GetPhase
+
+TEST_CASE("template class TAIntegral", "[quad]"){
+  SECTION("polynomial tests"){
+    class QuadTest : public TAFun<double>{
+    public:
+      double operator()(double x) const override{
+        static const int n = 9;
+        return (n+1)*pow(x, n);
+      } // end of member function
+    }; // end of the class
+    QuadTest quad;
+    double t = TAIntegral<double, QuadTest>::Trapezoid(quad, 0., 1.);
+    double s = TAIntegral<double, QuadTest>::Simpson(quad, 0., 1.);
+    double r = TAIntegral<double, QuadTest>::Romberg(quad, 0., 1.);
+    CHECK(t == Approx(1.).epsilon(1.e-5));
+    CHECK(s == Approx(1.).epsilon(1.e-6));
+    CHECK(r == 1.);
+  } // end section0
+  SECTION("trigonometric function tests"){
+    class QuadTest : public TAFun<double>{
+    public:
+      double operator()(double x) const override{
+        return sin(x);
+      } // end of member function
+    }; // end of the class
+    QuadTest quad;
+    const double b = TAMath::Pi()/2.;
+    double t = TAIntegral<double, QuadTest>::Trapezoid(quad, 0., b);
+    double s = TAIntegral<double, QuadTest>::Simpson(quad, 0., b);
+    double r = TAIntegral<double, QuadTest>::Romberg(quad, 0., b);
+    CHECK(t == Approx(1.).epsilon(1.e-5));
+    CHECK(s == Approx(1.).epsilon(1.e-6));
+    CHECK(r == Approx(1.).epsilon(1.e-6));
+  } // end section0
+} // end of TEST_CASE

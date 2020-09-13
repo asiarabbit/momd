@@ -6,14 +6,17 @@
   tool class, so it is defined to be a static class.
   \author SUN Yazhou, aisa.rabbit@163.com
   \date Created: 2020/07/09
-  \date Last modified: 2020/09/06 by SUN Yazhou
+  \date Last modified: 2020/09/08 by SUN Yazhou
   \copyright 2020 SUN Yazhou
   \copyright MOMD project, Anyang Normal University, IMP-CAS
 */
 
 #include <cmath>
+#include <iostream>
 #include <cstring>
 #include <algorithm>
+#include <utility>
+#include <catch2/catch.hpp>
 #include "TAMath.h"
 #include "TAException.h"
 
@@ -31,7 +34,7 @@ double TAMath::gammaln(double xx){
   if(xx <= 0.) TAException::Error("TAMath", "gammaln: x > 0. is mandatory.");
   // internal arithmetic will be done in double precision, a nicety that you can
   // omit if five-figure accuracy is good enough
-  static double c[6] = {76.18009172947146,-86.50532032941677,
+  static const double c[6] = {76.18009172947146,-86.50532032941677,
     24.01409824083091,-1.231739572450155,
     0.1208650973866179e-2,-0.5395239384953e-5};
   double tmp = xx + 5.5, x = xx; // (z+gamma+1/2), gamma = 5, N = 6
@@ -60,8 +63,11 @@ int TAMath::Factorial(int n){
   // larger value than size of the table is required. Actually, this big a value
   // is going to overflow on many computers, but no harm in trying
   if(n > 32) return exp(gammaln(n+1.));
-  while(ntop++ < n) a[ntop] = a[ntop-1]*ntop;
-  return a[n];
+  while(ntop < n){
+    ntop++;
+    a[ntop] = a[ntop-1]*ntop;
+  }
+  return floor(0.5+a[n]); // clear off the roundoff error
 } // end of member function Factorial
 
 // returns Binomial coefficients
@@ -81,8 +87,6 @@ double TAMath::Beta(double z, double w){
 
 /// \retval n!!
 int TAMath::BiFactorial(int n){
-  if(n < 0) TAException::Error("TAMath", "Factorial: n: %d is minus", n);
-
   return n <= 1 ? 1 : n * BiFactorial(n-2);
 } // end of member function BiFactorial
 
@@ -91,15 +95,25 @@ double TAMath::gammap(double a, double x){
   if(x < 0. || a <= 0.) TAException::Error("TAMath", "gammap: invalid arguements");
 
   if(x < (a+1.)) return gser(a, x); // series representation
-  else return 1. - gcf(a, x);
+  return 1. - gcf(a, x);
 } // end of member function gammap
-/// the incomplete gamma function gammaq, gammaq(a,x)=Q(a,x)=Gamma(a,x)/Gamma(a)
+/// the incomplete gamma function gammaq, gammaq(a,x)=Q(a,x)=1-P(a,x)
 double TAMath::gammaq(double a, double x){
   if(x < 0. || a <= 0.) TAException::Error("TAMath", "gammaq: invalid arguements");
 
   if(x < (a+1.)) return 1. - gser(a, x); // continued fraction representation
-  else return gcf(a, x);
+  return gcf(a, x);
 } // end of member function gammaq
+
+TEST_CASE("Incomplete Gamma function", "[gammap]"){
+  // CHECK(TAMath::gammap(1., 0.5) == Approx(0.606531).epsilon(1.e-8));
+  // CHECK(TAMath::gammaq(1., 0.5) == Approx(1.-0.606531).epsilon(1.e-8));
+  CHECK(TAMath::gammap(1., 0.5) == Approx(0.3934693402873666).epsilon(1.e-8));
+  CHECK(TAMath::gammap(1., 0.1) == Approx(0.09516258196404048).epsilon(1.e-8));
+  CHECK(TAMath::gammaq(1., 3.5) == Approx(0.0301973834223185).epsilon(1.e-8));
+  CHECK(TAMath::gammaq(1., 4.1) == Approx(0.016572675401761255).epsilon(1.e-8));
+  CHECK(exp(TAMath::gammaln(0.5)) == Approx(sqrt(TAMath::Pi())).epsilon(1.e-8));
+}
 
 // returns the incomplete gamma function P(a,x) evaluated by its series
 // representation. Optionally returns ln[Gamma(a)] as gln.
@@ -107,14 +121,14 @@ double TAMath::gser(double a, double x, double *gln){
   static const double ITMAX = 100; // maximum iteration times
   static const double EPS = 3.e-7; // fractional accuracy
 
-  if(x < 0.) TAException::Error("TAMath", "gamser: x < 0., x: %f", x);
+  if(x < 0.) TAException::Error("TAMath", "gser: x < 0., x: %f", x);
   double ap = a, sum, item = sum = 1./a;
   for(int i = 0; i < ITMAX; i++){
-    sum += (item *= x/ap++);
+    sum += (item *= x/++ap);
     if(fabs(item) < fabs(sum)*EPS)
-      return sum*exp(-x) * (gln ? *gln = gammaln(a) : gammaln(a));
+      return sum * exp(-x + a*log(x) - (gln ? *gln=gammaln(a) : gammaln(a)));
   } // end for over i
-  TAException::Error("TAMath", "gamser: a too large, and IMAX too small.");
+  TAException::Error("TAMath", "gser: a too large, and IMAX too small.");
   return 0.; // never gets here
 } // end of member function gamser
 
@@ -201,6 +215,7 @@ void TAMath::GaussJordan(matrix &a, int na, double *b){
   matrix bb(na, 1);
   for(int i = na; i--;) bb[i][0] = b[i];
   GaussJordan(a, na, bb, 1);
+  for(int i = na; i--;) b[i] = bb[i][0];
 } // end of member function GaussJordan-1
 
 /// Given a matrix a[0...n-1][0...n-1], this routine replaces it by the LU decomposition
@@ -233,14 +248,14 @@ void TAMath::LUDecomposition(matrix &a, int n, int *index, double &d){
     int imax; // imax: maximum beta in column imax
     for(int i = j; i < n; i++){
       sum = a[i][j];
-      for(int k = 0; k < i; k++) sum -= a[i][k]*a[k][j];
+      for(int k = 0; k < j; k++) sum -= a[i][k]*a[k][j];
       a[i][j] = sum;
-      if((dum = vv[i]*fabs(sum)) >= big){ // search for the largest betajj
+      if((dum = vv[i]*fabs(sum)) > big){ // search for the largest betajj
         big = dum; imax = i;
       } // end if
     } // end for over i
     if(j != imax){ // do we need to interchange rows?
-      for(int k = 0; k < n; k++) swap(a[j][k], a[imax][k]); // yes,
+      for(int k = 0; k < n; k++) swap(a[j][k], a[imax][k]);
       d = -d; vv[imax] = vv[j]; // and together with the parity d and the scale factor vv
     } // end if
     index[j] = imax;
@@ -263,14 +278,13 @@ void TAMath::LUDecomposition(matrix &a, int n, int *index, double &d){
 /// This routine takes into account the possibility that b will begin with many
 /// zeros, so it is efficient for use in matrix inversion
 void TAMath::LUBackSubstitution(const matrix &a, int n, const int *index, double *b){
-  int ii = 0, ip; double sum;
+  int ii = -1, ip; double sum;
   for(int i = 0; i < n; i++){
-    // exchange b[ip] and b[i] to unsramble the row permutation by LUDecomposition
-    ip = index[i];
-    sum = b[ip];
-    b[ip] = b[i];
+    // exchange b[ip] and b[i] to unscramble the row permutation by LUDecomposition
+    sum = b[ip=index[i]];
+    if(ip != i) b[ip] = b[i];
     // here begins the forward substitution to solve Ly=b
-    if(ii) for(int j = ii; j < i; j++) sum -= a[i][j]*b[j]; // b[ii] is the 1st non-zero
+    if(-1 != ii) for(int j = ii; j < i; j++) sum -= a[i][j]*b[j]; // b[ii] is the 1st non-zero
     else if(sum) ii = i; // element of b, so as to improve calculation efficiency
     b[i] = sum; // confirm the solution of y and stores it in b
   } // end for over i
@@ -282,14 +296,26 @@ void TAMath::LUBackSubstitution(const matrix &a, int n, const int *index, double
 } // end of member function LUBackSubstitution
 
 /// solve n-dim linar equation set ax=b using LU decomposition
-void TAMath::LUSolve(matrix &a, int n, double *b){
-  int index[n]; double d;
-  LUDecomposition(a, n, index, d);
-  LUBackSubstitution(a, n, index, b);
+void TAMath::LUSolve(matrix &a, int na, double *b){
+  int index[na]; double d;
+  LUDecomposition(a, na, index, d);
+  LUBackSubstitution(a, na, index, b);
 } // end of member function LUSolve
+void TAMath::LUSolve(matrix &a, int na, matrix &b, int nb){
+  int index[na]; double d;
+  LUDecomposition(a, na, index, d);
+  // recursively solve b[*][i]
+  double bb[na];
+  for(int i = nb; i--;){
+    for(int j = na; j--;) bb[j] = b[i][j];
+    LUBackSubstitution(a, na, index, bb);
+    for(int j = na; j--;) b[i][j] = bb[j];
+  } // end for over i
+} // end of member function LUSolve-1
 /// inverse n-dim matrix a using LU decomposition: AX=E
 void TAMath::LUInverse(matrix &a, int n, matrix &e){
   int index[n]; double d, b[n];
+  if(!a.DimensionMatch(e)) TAException::Error("TAMath", "LUInverse: Dimension Match.");
 
   LUDecomposition(a, n, index, d);
   for(int j = 0; j < n; j++){ // inverse a column by column - the j-th column
@@ -298,6 +324,13 @@ void TAMath::LUInverse(matrix &a, int n, matrix &e){
     for(int i = n; i--;) e[i][j] = b[i]; // assign b to e[*][j]
   } // end for over i
 } // end member function LUInverse
+void TAMath::LUInverse(matrix &a, int n){
+  matrix e(n, n); // an identity matrix
+  for(int i = n; i--;) e[i][i] = 1.;
+
+  LUInverse(a, n, e);
+  a = std::move(e);
+} // end of member function LUInverse
 
 /// calculate determinent of a square matrix
 double TAMath::Det(matrix &a, int n){
@@ -308,6 +341,26 @@ double TAMath::Det(matrix &a, int n){
   return d;
 } // end of member function Det
 
+TEST_CASE("Solve Linear Equation Set", "[linear]"){
+  matrix A(3, 3);
+  A = { 12., -3.,  3., -18.,  3., -1., 1.,  1.,  1. };
+  double b[3] = {15., -15., 6.};
+  SECTION("Test Gauss-Jordan Method"){
+    TAMath::GaussJordan(A, 3, b);
+    CHECK(b[0] == Approx(1.).epsilon(1.e-8));
+    CHECK(b[1] == Approx(2.).epsilon(1.e-8));
+    CHECK(b[2] == Approx(3.).epsilon(1.e-8));
+  }
+  SECTION("Test LU Method"){
+    TAMath::LUSolve(A, 3, b);
+    CHECK(b[0] == Approx(1.).epsilon(1.e-8));
+    CHECK(b[1] == Approx(2.).epsilon(1.e-8));
+    CHECK(b[2] == Approx(3.).epsilon(1.e-8));
+  }
+  SECTION("Determinant"){
+    CHECK(TAMath::Det(A, 3) == Approx(-66.).epsilon(1.e-8));
+  }
+} // end of TEST_CASE
 
 /// expand in storage the covariance matrix covar, so as to take into account
 /// parameters that are being held fixed, which would be assigned zero covariances
@@ -318,12 +371,11 @@ void TAMath::FillCovar(matrix &covar, int ma, bool *isFit, int nFit){
   else if(nFit <= 0) TAException::Error("TAMath", "FillCovar: invalid nFit: %d", nFit);
   for(int i = nFit; i < ma; i++) for(int j = 0; j <= i; j++) covar[i][j] = covar[j][i] = 0.;
 
-  int k = nFit;
-  for(int i = ma; i--;){
-    if(isFit[i]){
-      for(int j = 0; j < ma; j++) swap(covar[j][k], covar[j][i]); // col-i <-> col-k
-      for(int j = 0; j < ma; j++) swap(covar[k][j], covar[i][j]); // row-i <-> row-k
-      k--;
+  for(int j = ma; j--;){
+    if(isFit[j] && j > nFit-1){
+      nFit--;
+      for(int i = 0; i < ma; i++) swap(covar[i][nFit], covar[i][j]); // col-j <-> col-nFit
+      for(int i = 0; i < ma; i++) swap(covar[nFit][i], covar[j][i]); // row-j <-> row-nFit
     } // end if
   } // end for over j
 } // end of member function FillCovar

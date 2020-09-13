@@ -7,11 +7,12 @@
   fNN(q)=kNN/4pi*sigmaNN(i+alphaNN)*exp(-betaNN*q^2)
   \author SUN Yazhou, aisa.rabbit@163.com
   \date Created: 2020/07/08
-  \date Last modified: 2020/09/04 by SUN Yazhou
+  \date Last modified: 2020/09/09 by SUN Yazhou
   \copyright 2020 SUN Yazhou
   \copyright MOMD project, Anyang Normal University, IMP-CAS
 */
 
+#include <catch2/catch.hpp>
 #include "TAFNN.h"
 #include "TAMath.h"
 #include "TAException.h"
@@ -78,11 +79,11 @@ double TAFNN::GetSigmaNN(double pEk, int zP, int nP, int zT, int nT,
 /// alphaNN at arbitrary Ek is interpolated from array alphaNN
 double TAFNN::GetAlphaNN(double pEk, int zP, int nP, int zT, int nT){
   if(kHoriuchi == kParOpt) return AlphaBetaHoriuchi(pEk, true);
-  else return AlphaBetaLenziRay(pEk, zP, nP, zT, nT, true);
+  return AlphaBetaLenziRay(pEk, zP, nP, zT, nT, true);
 } // end of member function GetAlphaNN
 double TAFNN::GetBetaNN(double pEk, int zP, int nP, int zT, int nT){
   if(kHoriuchi == kParOpt) return AlphaBetaHoriuchi(pEk, false);
-  else return AlphaBetaLenziRay(pEk, zP, nP, zT, nT, false);
+  return AlphaBetaLenziRay(pEk, zP, nP, zT, nT, false);
 } // end of member function GetAlphaNN
 
 /// Horiuchi, et al., PRC.75.044607. E: [30, 1000], N=16
@@ -119,23 +120,23 @@ double TAFNN::AlphaBetaLenziRay(double pEk, int zP, int nP, int zT, int nT,
     "GetAlphaNN: Ek'd be within [10, 2200] MeV/u for Lenzi & Ray Parameters.");
 
   static const int n = 17; // 7 + 10
-  static double e[n] = {
+  static const double e[n] = {
     10., 30., 38., 40., 49., 85., 94.,
     100., 150., 200., 325., 425., 550., 650., 800., 1000., 2200.
   };
-  static double app[n] = {
+  static const double app[n] = {
     0.8, 0.87, 0.89, 0.9, 0.94, 1.0, 1.07,
     1.87, 1.53, 1.15, 0.45, 0.47, 0.32, 0.16, 0.06, 0.09, 0.17
   };
-  static double apn[n] = {
+  static const double apn[n] = {
     0.8, 0.87, 0.89, 0.9, 0.94, 1.0, 1.07,
     1.00, 0.96, 0.71, 0.16, 0.25, 0.24, 0.35, 0.20, 0.46, 0.50
   };
-  static double bpp[n] = {
+  static const double bpp[n] = {
     0., 0., 0., 0., 0., 0., 0.,
     0.66, 0.57, 0.56, 0.26, 0.21, 0.04, 0.07, 0.09, 0.09, 0.12
   };
-  static double bpn[n] = {
+  static const double bpn[n] = {
     0., 0., 0., 0., 0., 0., 0.,
     0.36, 0.58, 0.68, 0.36, 0.27, 0.085, 0.09, 0.12, 0.12, 0.14
   };
@@ -153,3 +154,11 @@ double TAFNN::AlphaBetaLenziRay(double pEk, int zP, int nP, int zT, int nT,
   return IsospinAverage(polint(e+i, bpp+i, npol, pEk),
     polint(e+i, bpn+i, npol, pEk), zP, zT, nP, nT);
 } // end of member function AlphaBetaLenziRay
+
+TEST_CASE("template class TAInterpolate", "[polint]"){
+  double x[4] = {1., 2., 3., 4.}, y[4] = {1., 4., 9., 16.}, dy;
+  double yy = polint(x, y, 4, -2.5, &dy);
+  // TAException::Info("TAInterpolate", "PolyInter: dy is %f", dy);
+  CHECK(yy == 6.25);
+  CHECK(dy == 0.);
+} // end of TEST_CASE

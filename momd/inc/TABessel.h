@@ -2,11 +2,11 @@
   MOMD project, Anyang Normal University, IMP-CAS
   \file TABessel.h
   \class TABessel
-  \brief Numerical result of Bessel functions, stored in arrarys. Note that this
-  class is a mathematical tool class.
+  \brief Numerical results of Bessel and modified Bessel functions of integer order.
+  Note that this class is a mathematical tool class.
   \author SUN Yazhou, aisa.rabbit@163.com
   \date Created: 2020/07/08
-  \date Last modified: 2020/07/08 by SUN Yazhou
+  \date Last modified: 2020/09/09 by SUN Yazhou
   \copyright 2020 SUN Yazhou
   \copyright MOMD project, Anyang Normal University, IMP-CAS
 */
@@ -27,8 +27,8 @@ public:
   static double BesselY0(double x);
   static double BesselJ1(double x);
   static double BesselY1(double x);
-  static double BesselJ(int n, double x); // half integer order
-  static double BesselY(int n, double x); // half integer order
+  static double BesselJ(int n, double x); // integer order
+  static double BesselY(int n, double x); // integer order
 
   // modified Bessel functions
   static double BesselI0(double x);

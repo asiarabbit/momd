@@ -18,7 +18,7 @@
 /// n starts from 0. This method is defined protected, for it's a underlying
 /// method, only supposed to be used incrementally as
 ///  for(i=0;i<m;i++) s=trapzd(fun, a, b, i)
-/// \param FUNTOR should be a class with methods as double operator()(double)
+/// \param FUNTOR should be a class with a method: double operator()(double)
 template<typename T, typename FUNCTOR>
 T TAIntegral<T, FUNCTOR>::trapzd(const FUNCTOR &fun, double a, double b, int n){
   if(b - a < 0) TAException::Error("TAIntegral", "trapzd(): b - a < 0");
@@ -28,8 +28,8 @@ T TAIntegral<T, FUNCTOR>::trapzd(const FUNCTOR &fun, double a, double b, int n){
   if(0 == n) return tn = 0.5*(b-a)*(fun(a)+fun(b)); // the crudest trapezoidal rule
 
   // T_2n = 1/2*(T_n+H_n), H_n = h*\sum_{i=0}^{n-1}{fun(x_{i+1/2})}
-  int nn = 1; // the number of additional interior points: 2 to the power n-2
-  for(int i = 0; i < n-1; i++) nn <<= 1; // nn = pow(2, n-2)
+  int nn = 1; // the number of additional interior points: 2 to the power n-1
+  for(int i = n-1; i--;) nn <<= 1; // nn = pow(2, n-1)
   T h = (b-a)/nn, x = a + 0.5*h, hn = 0.;
   for(int i = 0; i < nn; i++, x += h) hn += fun(x);
   tn = 0.5*(tn+h*hn); // Tn->T2n, this replaces s by its refined value
@@ -78,7 +78,8 @@ T TAIntegral<T, FUNCTOR>::Simpson(const FUNCTOR &fun, double a, double b){
 template <typename T, typename FUNCTOR>
 T TAIntegral<T, FUNCTOR>::Romberg(const FUNCTOR &fun, double a, double b){
   // npol points used in extrapolation and nmax stages in trapezoidal quadrature
-  static const int npol = 5, nmax = 20;
+  // algebraic precision: 2*np-1, 9 for np = 5
+  static const int np = 5, nmax = 20; // np: number of interpolation points
   static const T epsilon = 1.e-6; // fractional accuracy
 
   double h[nmax]; T s[nmax]; // h is actually the conventional h^2
@@ -86,8 +87,8 @@ T TAIntegral<T, FUNCTOR>::Romberg(const FUNCTOR &fun, double a, double b){
   h[0] = 1.;
   for(int i = 0; i < nmax; i++){
     s[i] = trapzd(fun, a, b, i);
-    if(i >= npol - 1){
-      romb = TAInterpolate<T>::PolyInter(h+i-npol, s+i-npol, npol, 0., &dromb);
+    if(i+1 >= np){
+      romb = TAInterpolate<T>::PolyInter(h+i+1-np, s+i+1-np, np, 0., &dromb);
       if(fabs(dromb) < epsilon*fabs(romb)) return romb;
     }
     // this is the key step. since h^2, not h, is the argument for the extrapolation
@@ -97,3 +98,24 @@ T TAIntegral<T, FUNCTOR>::Romberg(const FUNCTOR &fun, double a, double b){
   TAException::Error("TAIntegral", "Romberg(): Too many steps occurred.");
   return 0.; // never gets here
 } // end of the member function Romberg
+
+// integral of f(x) over domain [x[0],x[n-1]]. n is the length of x and f
+// composed with formula (8.3.6) p.212 Computing Method ver.3 by Guicheng Li
+template<typename T, typename FUNCTOR>
+T TAIntegral<T, FUNCTOR>::Simpson(int n, const double *x, const T *f){
+  // number of individual Simpson intervals
+  int k = (n-1) / 2; // f[n-1] is dropped in the case where n is even
+
+  T sum = f[0] + f[2*k];
+  for(int i = 0; i < k; i++) sum += 4.*f[2*i+1];
+  for(int i = 1; i < k; i++) sum += 2.*f[2*i];
+
+  const double h = (x[n-1] - x[0]) / (n-1);
+  if(h < 0) TAException::Error("TAIntegral", "Simpson: x[n-1] is less than x[0].");
+  sum *=  h / 3.;
+  // Simpson's rule is only for odd n
+  // otherwise integral of f[n-1]*h should be explicitly included
+  if(n % 2 == 0) sum += f[n-1] * h;
+
+  return sum;
+} // end of member function Simpson

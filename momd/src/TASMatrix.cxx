@@ -8,7 +8,7 @@
   takes care of the fitting as well.
   \author SUN Yazhou, aisa.rabbit@163.com
   \date Created: 2020/07/08
-  \date Last modified: 2020/09/06 by SUN Yazhou
+  \date Last modified: 2020/09/10 by SUN Yazhou
   \copyright 2020 SUN Yazhou
   \copyright MOMD project, Anyang Normal University, IMP-CAS
 */

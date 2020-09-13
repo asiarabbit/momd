@@ -2,7 +2,7 @@
   MOMD project, Anyang Normal University, IMP-CAS
   \file TASpheroidalHarmonics.h
   \class TASpheroidalHarmonics
-  \brief Usage of two point boundary problems for solving ODE of speroidal harmonics:
+  \brief Usage of two point boundary problems for solving ODE of spheroidal harmonics:
     (1-x^2)*d^2y/dx^2-2(m+1)x*dy/dx+(mu-c^2*x^2)y=0
   Currently the shooting method is used.
   \author SUN Yazhou, aisa.rabbit@163.com
@@ -12,17 +12,18 @@
   \copyright MOMD project, Anyang Normal University, IMP-CAS
 */
 
-#ifndef _TASperoidalHarmonics_h_
-#define _TASperoidalHarmonics_h_
+#ifndef _TASpheroidalHarmonics_h_
+#define _TASpheroidalHarmonics_h_
 
 #include "TATwoPointODE.h"
 
-class TASperoidalHarmonics : public TATwoPointODE{
+class TASpheroidalHarmonics : public TATwoPointODE{
 public:
-  TASperoidalHarmonics(){}
-  virtual ~TASperoidalHarmonics(){}
+  TASpheroidalHarmonics(){}
+  virtual ~TASpheroidalHarmonics(){}
 
-  void Sphoot();
+  void Sphoot(); ///< the main program for solving the ODE
+  double GetLambda() const{ return fLambda; }
   /// calculates the discrepancy vector f[0..n2] of the ending boundary conditions,
   /// given the vector y[0..n-1] at the endpoint x2
   void score(double x2, const double *y, double *f);
@@ -39,6 +40,7 @@ protected:
   int fm, fn;
   double fc2;
   double fgamma; // y(1) are normaolized to gamma = (-)^m*(n+m)!/(2^m*m!*(n-m)!)
+  double fLambda; // the eigenvalue, which is relevant to the initial values chosen
 };
 
 #endif

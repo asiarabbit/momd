@@ -52,7 +52,7 @@ public:
   static double norm(int n, const double *p){ return sqrt(innerProduct(n, p, p)); }
   static double infNorm(int n, const double *f){
     double m = 0.;
-    for(int i = n; i--;) if(fabs(f[i] > m)) m = f[i];
+    for(int i = n; i--;) if(fabs(f[i]) > m) m = fabs(f[i]);
     return m;
   }
 
@@ -110,10 +110,12 @@ public:
   /// zeros, so it is efficient for use in matrix inversion
   static void LUBackSubstitution(const matrix &a, int n, const int *index, double *b);
   /// solve n-dim linar equation set ax=b using LU decomposition
-  static void LUSolve(matrix &a, int n, double *b);
+  static void LUSolve(matrix &a, int na, double *b);
+  static void LUSolve(matrix &a, int na, matrix &b, int nb);
   /// inverse n-dim matrix a using LU decomposition: AX=E
   static void LUInverse(matrix &a, int n, matrix &e);
-  /// calculate determinent of a square matrix
+  static void LUInverse(matrix &a, int n);
+  /// calculate determinent of a square matrix. NOTE that this will change a
   static double Det(matrix &a, int n);
 
   /// expand in storage the covariance matrix covar, so as to take into account

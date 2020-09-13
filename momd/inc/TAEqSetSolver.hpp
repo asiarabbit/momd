@@ -6,7 +6,7 @@
   from Numerical Recipes in C. (Cambridge U. Press, 2002)
   \author SUN Yazhou, aisa.rabbit@163.com
   \date Created: 2020/08/11
-  \date Last modified: 2020/09/06 by SUN Yazhou
+  \date Last modified: 2020/09/13 by SUN Yazhou
   \copyright 2020 SUN Yazhou
   \copyright MOMD project, Anyang Normal University, IMP-CAS
 */
@@ -19,14 +19,22 @@
 using std::max;
 
 template <typename FUNC>
+double *TAEqSetSolver<FUNC>::kvec = nullptr;
+
+template <typename FUNC>
 TAEqSetSolver<FUNC>::TAEqSetSolver(){}
 template <typename FUNC>
-TAEqSetSolver<FUNC>::~TAEqSetSolver(){}
+TAEqSetSolver<FUNC>::~TAEqSetSolver(){
+  if(kvec){
+    delete kvec;
+    kvec = nullptr;
+  }
+} // end of the destructor
 
 /// Given an n-dimensional point x0[0...n-1], the value of the function f0 and
 /// the gradient fp0[0...n-1] and the Newton direction p[0...n-1], this method
 /// finds a new point x[0...n-1] along the direction p from x0, so that at x
-/// the function has decreased "sufficiently". The new fucntion value is returned
+/// the function has decreased "sufficiently". The new function value is returned
 /// in f. stepmax is an input quantity that limits the length of the steps so that
 /// you do not try to evaluate the function in regions where it is undefined or
 /// subject to overflow. The output quantity check is false(0) on a normal exit.
@@ -35,7 +43,7 @@ TAEqSetSolver<FUNC>::~TAEqSetSolver(){}
 /// zero-finding algorithm the calling program should check whether the convergence
 /// is spurious. Here f=fmin(x)=1/2*(F.F). where F(x)=0 is the equation set to be solved.
 /// NOTE that functor type FUNC should have member function:
-/// double operator()(int n, const double *x, double *fvec)
+/// double operator()(int n, const double *x, double *kvec)
 template <typename FUNC>
 void TAEqSetSolver<FUNC>::LineSearch(int n, const double *x0, double f0, const double *fp0,
       double *p, double *x, double &f, double stepmax, int &check, FUNC &func){
@@ -48,11 +56,10 @@ void TAEqSetSolver<FUNC>::LineSearch(int n, const double *x0, double f0, const d
   if(pnorm > stepmax) for(int i = n; i--;) p[i] *= stepmax / pnorm; // if |p| too big, scale to stepmax
   double slope = TAMath::innerProduct(n, fp0, p); // g'(lambda) = \Nebla f . p
   if(slope >= 0.) TAException::Error("TAEqSetSolver",
-    "slope is minus: %f, LineSearch: p not a Newton direction or \
+    "slope is positive: %f, LineSearch: p not a Newton direction or \
 Roundoff errorr problem occurred.", slope);
 
   double lambda = 0., lambda2, f2, lambda_min, tmpLambda;
-  const int nn = n; double fvec[nn]{}; // to store func(x)
   /// calculate lambda_min: lambda_min*p <= x0*TOLX ~1e-7*x0
   double poxMax = 0.; // pox: p over x, p/x
   for(int i = n; i--;) poxMax = max(poxMax, fabs(p[i])/max(fabs(x0[i]), 1.));
@@ -60,7 +67,7 @@ Roundoff errorr problem occurred.", slope);
   lambda = 1.; // always try Newton step first
   while(1){
     for(int i = n; i--;) x[i] = x0[i] + lambda * p[i]; // x=x0+lambda*p
-    f = fmin(n, x, fvec, func);
+    f = fmin(n, x, kvec, func);
     if(lambda < lambda_min){ // too small a step, convergence on x reached
       for(int i = n; i--;) x[i] = x0[i];
       check = 1;
@@ -68,6 +75,7 @@ Roundoff errorr problem occurred.", slope);
     } // end if
     else if(f <= f0+ALF*lambda*slope) return; // sufficient function decrease detected
     else{ // find lambda that minimizes f(x0+lambda*p), cached in tmpLambda
+      // model fmin around x0 with a quadratic, then a cubic of dx, to get the respective minimum
       if(1. == lambda) tmpLambda = -slope/(2.*(f-f0-slope)); // the first time for trying the lambda
       else{
         double rhs1 = f -f0-lambda *slope;
@@ -95,36 +103,41 @@ Roundoff errorr problem occurred.", slope);
 /// has converged to a locla minimum of the function f=func.func. In which case
 /// try restarting from a different initial guess.
 /// NOTE that functor type FUNC should have member function:
-/// double operator()(int n, const double *x, double *fvec)
+/// double operator()(int n, const double *x, double *kvec)
 template <typename FUNC>
 void TAEqSetSolver<FUNC>::Newton(double *x, int n, int &check, FUNC &func){
   static const double MAXITS = 200; // maximum iteration times
-  static const double TOLF = 1.e-4; // criterion for convergence on func
-  static const double TOLMIN = 1.e-6; // check for spurious convergence, i.e. to a local minimum
-  static const double TOLX = 1.e-7; // convergence criterion for delta x: |delta x|<TOFLX -> return
+  static const double TOLF = 1.e-7; // criterion for convergence on func, IMPORTANT, 1.e-4
+  static const double TOLMIN = 1.e-6; // check for spurious convergence of f (to a local minimum)
+  static const double TOLX = 1.e-8; // convergence criterion for delta x: |delta x|<TOFLX -> return
   static const double STEPMAX = 100.; // maximum step = STEPMAX * ||x||
   // test for initial guess being a root. Use more stringent test than simply TOLF //
-  const int nn = n; double fvec[nn];
-  double f = fmin(n, x, fvec, func); // f=1/2*fvec.fvec
-  if(TAMath::infNorm(n, fvec) < 0.01*TOLF){ check = 0; return; }
+  const int nn = n;
+  if(kvec) delete kvec;
+  kvec = new double[nn]{}; // to store f(x)
+  double f = fmin(n, x, kvec, func); // f=1/2*kvec.kvec, kvec is also assigned here
+  const double kvecMax0 = TAMath::infNorm(n, kvec); // for relative convergence of fvec
+  if(kvecMax0 < 0.01*TOLF){ check = 0; return; }
 
   // start the iterations of the Newton iteration method //
-  double stepmax = STEPMAX * max(TAMath::norm(n, x), double(n)); // STEPMAX*|x|
-  matrix jj(n,n); // jj(i,j) = partial_func_i/partial_x_j
+  const double stepmax = STEPMAX * max(TAMath::norm(n, x), double(n)); // STEPMAX*|x|
+  matrix jj(n,n); // jj(i,j) = partial_func_i/partial_x_j, the Jacobian matrix
   double fp[n]{}, x0[n]{}, f0, p[n]{}; // \Nebla fmin, old x and old f; p is for Newton direction
-  for(int i = MAXITS; i--;){
-    Jacobian(n, x, fvec, jj, func); // n calls of func
+  for(int i = 0; i < MAXITS; i++){
+    // TAException::Info("TAEqSetSolver", "Newton: it's the %d-th iteration", i);
+    Jacobian(n, x, kvec, jj, func); // n calls of func
     for(int j = 0; j < n; j++){
-      for(int k = 0; k < n; k++) fp[j] += jj[k][j] * fvec[k]; // compute \Nebla f
+      fp[j] = 0.; // initialize Nebla_f
+      for(int k = 0; k < n; k++) fp[j] += jj[k][j] * kvec[k]; // Nebla_f = J.F
       x0[j] = x[j]; // store x
-      p[j] = -fvec[j]; // rhs for Newton Eq: J.dx=-F
+      p[j] = -kvec[j]; // rhs for Newton Eq: J.dx=-F
     } // end for over j
     f0 = f;
     /// solve the Newton direction p ///
     TAMath::LUSolve(jj, n, p); // Solve J.dx=-F by inversing jj, the solution is stored inplace in p
-    LineSearch(n, x0, f0, fp, p, x, f, stepmax, check, func); // f & fvec updated to at new x
+    LineSearch(n, x0, f0, fp, p, x, f, stepmax, check, func); // f & kvec updated to at new x
     /// test for convergence ///
-    if(TAMath::infNorm(n, fvec) < TOLF){ check = 0; return; } // test convergence on fvec
+    if(TAMath::infNorm(n, kvec) < TOLF*kvecMax0){ check = 0; return; } // test convergence on kvec
     if(check){ // check for \Nebla_f. If it's ~ zero, possibly a minimum is reached, or it's fine
       double dfmax = 0.; // ||\Nebla_f_i*x_i||_\infty
       for(int j = n; j--;) dfmax = max(dfmax, fabs(fp[j])*max(fabs(x[j]), 1.));
@@ -140,20 +153,20 @@ void TAEqSetSolver<FUNC>::Newton(double *x, int n, int &check, FUNC &func){
   TAException::Error("TAEqSetSolver", "Newton: Too many iterations, exceeding MAXITS.");
 } // end of the member function Newton
 
-/// \retval: 1/2*fvec.fvec
-/// \param n: the dimension of the equation set (length of array x and fvec)
+/// \retval: 1/2*kvec.kvec
+/// \param n: the dimension of the equation set (length of array x and kvec)
 /// NOTE that functor type FUNC should have member function:
-/// double operator()(int n, const double *x, double *fvec)
+/// double operator()(int n, const double *x, double *kvec)
 template <typename FUNC>
-double TAEqSetSolver<FUNC>::fmin(int n, const double *x, double *fvec, FUNC &func){
-  func(n, x, fvec); // assign fvec
-  return 0.5*TAMath::innerProduct(n, fvec, fvec);
+double TAEqSetSolver<FUNC>::fmin(int n, const double *x, double *kvec, FUNC &func){
+  func(n, x, kvec); // assign kvec
+  return 0.5*TAMath::innerProduct(n, kvec, kvec);
 } // end of member function fmin
 
 /// calculate the Jacobian j of function func at x
 /// f0 is func at x, and is required to be given upon calling this routine
 /// NOTE that functor type FUNC should have member function:
-/// double operator()(int n, const double *x, double *fvec)
+/// double operator()(int n, const double *x, double *kvec)
 template <typename FUNC>
 void TAEqSetSolver<FUNC>::Jacobian(int n, const double *x, const double *f0, matrix &jj, FUNC &func){
   static const double EPS = 1.e-8; // approximate square root of the machine precision (double)

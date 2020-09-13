@@ -6,24 +6,26 @@
   based on Runge-Kutta methods.
   \author SUN Yazhou, aisa.rabbit@163.com
   \date Created: 2020/08/08
-  \date Last modified: 2020/09/06 by SUN Yazhou
+  \date Last modified: 2020/09/11 by SUN Yazhou
   \copyright 2020 SUN Yazhou
   \copyright MOMD project, Anyang Normal University, IMP-CAS
 */
 
 #include <cmath>
 #include <algorithm>
+#include <catch2/catch.hpp>
 #include "TAODESolver.h"
 #include "TAException.h"
 
 using std::max;
 using std::min;
 
-TAODESolver::TAODESolver() : fxp(nullptr), fyp(nullptr){
-  fmax = 1000; fdxsave = 0.2; fnvar = 0;
+TAODESolver::TAODESolver() : fy(nullptr), EPS(1.e-6), fxp(nullptr), fyp(nullptr){
+  fmax = 0; fdxsave = 0.2; fnvar = 0; fhmin = 1.e-10;
 } // end of the constructor
 TAODESolver::~TAODESolver(){
   if(fxp){ delete [] fxp; fxp = nullptr; }
+  if(fy) { delete [] fy;  fy  = nullptr; }
   if(fyp){ delete    fyp; fyp = nullptr; }
 } // end of the destrcutor
 
@@ -38,21 +40,21 @@ TAODESolver::~TAODESolver(){
 /// by another routine of rk algorithm.
 /// \param eps is a fractional error: eps = err/(y+dy), for RK5, eps~O(h^5)
 void TAODESolver::RKStepper(double *y, double *dydx, int n, double &x, double htry,
-    double eps, double *yscale, double &hdid, double &hnext){
+    double eps, const double *yscale, double &hdid, double &hnext){
   static const double SAFETY = 0.9; // to scale h so as to be smaller, and safer
   static const double EXPL = -0.2, EXPH = -0.25;
   static const double ERRLIM = 1.889e-4; // =pow(5/SAFETY, 1/EXPH), to control h not too inflated
 
   double errmax, h = htry; // set stepsize to the initial trial value
-  const int nn = n; double ytemp[nn], yerr[nn]; // new y and its truncation error
+  const int nn = n; double ytemp[nn]{}, yerr[nn]{}; // new y and its truncation error
 
   // complete one step with adaptive stepsize //
   while(1){
     RKCashKarp(y, dydx, n, x, h, ytemp, yerr); // take a step
     errmax = 0.;
     // find the "worst-offender" in array yerr
-    for(int i = 1; i < n; i++) errmax = max(errmax, fabs(yerr[i]/yscale[i]));
-    errmax /= eps; // Delta1/Delta0 = yerr/(y+dy) / epsilon  for constant fractional error
+    for(int i = 0; i < n; i++) errmax = max(errmax, fabs(yerr[i]/yscale[i]));
+    errmax /= eps; // Delta1/Delta0 = yerr/(y+dy) / epsilon for constant fractional error
     if(errmax <= 1.) break;
     double htemp = SAFETY*h*pow(errmax, EXPH);
     h = h >= 0. ? max(htemp, 0.1*h) : min(htemp, 0.1*h); // no more than a factor of 10.
@@ -72,7 +74,7 @@ void TAODESolver::RKStepper(double *y, double *dydx, int n, double &x, double ht
 /// fourth-order RK method. The user supplies the routine derivs(x,y,dydx) to
 /// provide dy/dx at x.
 /// \param eps is a constant fractional error: eps = err/(y+dy), for RK5, eps~O(h^5)
-void TAODESolver::RKCashKarp(double *y, double *dydx, int n, double &x, double h,
+void TAODESolver::RKCashKarp(const double *y, double *dydx, int n, double &x, double h,
     double *yout, double *yerr){
   // Cash-Karp Parameters for Embedded Runge-Kutta Method //
   // k1=h*f(xn, yn); k2=h*f(xn+a2*h, yn+b21*k1) ... k6=h*f(xn+a6*h,yn+b61*k1+...+b65*k5)
@@ -127,16 +129,12 @@ void TAODESolver::RKCashKarp(double *y, double *dydx, int n, double &x, double h
 /// the corresponding stepsize control solution at x2 would be updated inplace in ystart
 void TAODESolver::ODEIntegrator(double *ystart, int nvar, double x1, double x2, double eps,
     double h1, double hmin, int &nOK, int &nBAD){
-  static const int MAXSTEP = 10000, TINY = 1.e-30; // maximum steps allowed over the solution
+  static const int MAXSTEP = 50000, TINY = 1.e-30; // maximum steps allowed over the solution
 
   const int n = nvar; // count of the dependent variables
-  SetSave(fmax, fdxsave, nvar); // allocate memory to fxp and fyp
   double y[n], yscale[n], dydx[n]; // dy/dx, yscale is to scale y[i] for a uniform error estimate
   for(int i = 0; i < n; i++) y[i] = ystart[i];
   double x = x1, h = x2 - x1 > 0. ? fabs(h1) : -fabs(h1), hdid, hnext;
-  // for saving the results //
-  fyp = new matrix(fmax, n);
-  fxp = new double[fmax];
   double xsave; // x that can be saved
   if(fmax > 0) xsave = x1 - fdxsave*2.; // so that x1 can be saved for sure
   nOK = nBAD = fcount = 0;
@@ -147,7 +145,7 @@ void TAODESolver::ODEIntegrator(double *ystart, int nvar, double x1, double x2, 
     // store the intermediate results //
     if(fmax > 0 && fcount < fmax && fabs(x-xsave) > fabs(fdxsave)){
       fxp[fcount] = x;
-      for(int j = 0; j < n; j++) (*fyp)[j][fcount] = y[i];
+      for(int j = 0; j < n; j++) (*fyp)[j][fcount] = y[j];
       fcount++;
       xsave = x;
     } // end if
@@ -155,16 +153,17 @@ void TAODESolver::ODEIntegrator(double *ystart, int nvar, double x1, double x2, 
     RKStepper(y, dydx, n, x, h, eps, yscale, hdid, hnext);
     if(hdid == h) nOK++; else nBAD++;
     if((x-x2)*(x2-x1) >= 0.){ // then the end of the interval has been reached
-      for(int j = 0; j < n; j++) ystart[i] = y[i];
+      for(int j = 0; j < n; j++) ystart[j] = y[j];
       if(fmax > 0){ // save the final step before ending the program
         fxp[fcount] = x;
-        for(int j = 0; j < n; j++) (*fyp)[j][fcount] = y[i];
+        for(int j = 0; j < n; j++) (*fyp)[j][fcount] = y[j];
         fcount++;
       } // end if
+      // TAException::Info("TAODESolver", "ODEIntegrator: Upon returning, i is %d", i);
       return;
     } // end if
     if(fabs(hnext) <= hmin)
-      TAException::Error("TAODESolver", "ODEIntegrator: stepsize too small.");
+      TAException::Warn("TAODESolver", "ODEIntegrator: stepsize too small.");
     h = hnext;
   } // end for over i
   TAException::Error("TAODESolver", "ODEIntegrator: Too many steps occurred.");
@@ -182,28 +181,67 @@ int TAODESolver::GetSolution(double *x, double *y, int ndim) const{
   return fcount;
 } // end of member function GetSolution
 
-void TAODESolver::SetSave(int maxStepCount, int maxStepSize, int nvar){
-  if(maxStepSize != fdxsave) fdxsave = maxStepSize;
-  if(fnvar == nvar && maxStepCount == fmax) return; // no need for memoroy change
+void TAODESolver::SetSave(int maxStepCount, double maxStepSize, int nvar){
+  if(maxStepSize > 0. || maxStepSize != fdxsave) fdxsave = maxStepSize;
+  if(nvar == fnvar && maxStepCount == fmax) return; // no need for memoroy change
 
-  fnvar = nvar; fmax = maxStepCount;
-  if(fxp){ delete [] fxp; fxp = new double[fmax]{}; }
-  if(fyp){ delete    fyp; fyp = new matrix(nvar, fmax); }
+  if(nvar > 0) fnvar = nvar;
+  if(maxStepCount >= 0) fmax = maxStepCount;
+  if(fy)  delete [] fy;
+  fy  = new double[fnvar]{};
+  if(!fmax) return;
+  if(fxp) delete [] fxp;
+  fxp = new double[fmax]{};
+  if(fyp) delete fyp;
+  fyp = new matrix(nvar, fmax);
 } // end of member function SetSave
+//< relative error for each step
+void TAODESolver::SetEPS(double eps){
+  if((EPS = fabs(eps)) > 0.1) TAException::Warn("TAODESolver", "SetEPS: Larger than 0.1");
+}
+///< minimum step allowed
+void TAODESolver::SetMinStep(double hmin){
+  fhmin = fabs(hmin);
+}
 
 
 /// Initial values for the nvar ODEs at x2 are generated from the n2 input coefficients
 /// v[0..n2-1] by load(...). The user-supplied routine derives(x,y,dydx) supplies
 /// derivatives information to the ODE integrator
 void TAODESolver::Solve(double x1, double x2, const double *v){
-  static const double EPS = 1.e-6;
-
-  if(0 == fnvar) TAException::Error("TAODESolver", "Solve: fnvar not assigned.");
+  if(!fnvar) TAException::Error("TAODESolver", "Solve: fnvar not assigned.");
+  if(!fy && fnvar > 0) SetSave(fmax, fdxsave, fnvar);
   if(x1 == x2) TAException::Error("TAODESolver", "Solve: x1 is equal to x2.");
-  int nbad, nok; // nOK and nBAD: counts of steps where input h is adopted
-  double h1 = (x2-x1)/100., hmin = 0., y[fnvar];
+  fh1 = (x2-x1)/100.;
 
-  fmax = 0; // 0: not store intermediate results
-  load(x1,v,y); // assign y
-  ODEIntegrator(y,fnvar,x1,x2,EPS,h1,hmin,nok,nbad);
+  load(x1,v,fy); // assign y
+  ODEIntegrator(x1, x2);
 } // end of member function Shoot
+
+
+TEST_CASE("ODE Set Solver", "[ode]"){
+  static const double a = 0.34;
+  class ODE2 : public TAODESolver{
+  public:
+    void derivs(double x, const double *y, double *dydx){
+      dydx[0] = y[1];
+      dydx[1] = -a*a*y[0];
+    }
+    void load(double x1, const double *v, double *y){
+      y[0] = v[0];
+      y[1] = v[1];
+    }
+  };
+  const int nvar = 2, nmax = 0;
+  const double hmax = 0.05;
+  ODE2 ode;
+  ode.SetSave(nmax, hmax, nvar); // nmax stepMax, nvar
+  ode.SetEPS(1.e-8);
+  double x1 = 0., x2 = 9.24;
+  double v[nvar] = {1., a};
+  ode.Solve(x1, x2, v);
+  const double y2 = ode.GetYatX2()[0], e = sin(a*x2)+cos(a*x2);
+  const double epsilon = fabs((y2-e)/e);
+  CHECK(y2 == Approx(e).epsilon(1e-4));
+  CHECK(epsilon == Approx(8e-5).epsilon(0.1));
+} // end of TEST_CASE

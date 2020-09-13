@@ -7,7 +7,7 @@
   implementing member function load, score and derivs in the subclass.
   \author SUN Yazhou, aisa.rabbit@163.com
   \date Created: 2020/08/14
-  \date Last modified: 2020/08/14 by SUN Yazhou
+  \date Last modified: 2020/09/12 by SUN Yazhou
   \copyright 2020 SUN Yazhou
   \copyright MOMD project, Anyang Normal University, IMP-CAS
 */
@@ -30,14 +30,16 @@ using std::min;
 /// i.e. TAEqSetSolver::Newton zeros function f(v), which is calculated by routine
 /// this routine, namely, shoot. The user-supplied routine derives(x,y,dydx) supplies
 /// derivatives information to the ODE integrator
-void TATwoPointODE::Shoot(int n, const double *v, double *f){
-  static const double EPS = 1.e-6;
-
-  int nbad, nok; // nOK and nBAD: counts of steps where input h is adopted
-  double h1 = (fx2-fx1)/100., hmin = 0., y[n];
-
+void TATwoPointODE::Shoot(const double *v, double *f){
   fmax = 0; // 0: not store intermediate results
-  load(fx1,v,y); // assign y
-  ODEIntegrator(y,n,fx1,fx2,EPS,h1,hmin,nok,nbad);
-  score(fx2,y,f); // calculate f
+  load(fx1,v,fy); // assign y
+  ODEIntegrator(fx1,fx2);
+  score(fx2,fy,f); // calculate f
 } // end of member function Shoot
+
+void TATwoPointODE::SetRange(double x1, double x2){
+  if(x1 == x2) TAException::Error("TATwoPointODE", "SetRange: x1 is equal to x2.");
+  fx1 = x1;
+  fx2 = x2;
+  fh1 = (fx2-fx1)/100.;
+} // end of member function SetRange

@@ -6,11 +6,12 @@
   class is a mathematical tool class.
   \author SUN Yazhou, aisa.rabbit@163.com
   \date Created: 2020/07/08
-  \date Last modified: 2020/07/19 by SUN Yazhou
+  \date Last modified: 2020/09/09 by SUN Yazhou
   \copyright 2020 SUN Yazhou
   \copyright MOMD project, Anyang Normal University, IMP-CAS
 */
 
+#include <catch2/catch.hpp>
 #include "TABessel.h"
 #include "TAMath.h"
 #include "TAException.h"
@@ -20,6 +21,7 @@
 // x: [0,8]: rational functions of x
 // x: [8: +\infty]: Jn(x)=sqrt(2/(PI*x))[Pn(8/x)cos(Xn)-Qn(8/x)sin(Xn)]
 // Xn: x - (2n+1)PI/4
+// estimated relative accuracy: epsilon = 1e-8
 double TABessel::BesselJ0(double x){
   x = fabs(x);
 
@@ -28,8 +30,8 @@ double TABessel::BesselJ0(double x){
     // direct rational function fit
     double y1 = 57568490574.+y*(-13362590354.+y*(651619640.7
       +y*(-11214424.18+y*(77392.33017+y*(-184.9052456)))));
-    double y2 = -0.1562499995e-1+y*(0.1430488765e-3
-      +y*(-0.6911147651e-5+y*(0.7621095161e-6-y*0.934945152e-7)));
+    double y2 = 57568490411.+y*(1029532985.+y*(9494680.718
+      +y*59272.64853+y*(267.8532712+y)));
     return y1 / y2;
   } // end if
 
@@ -73,8 +75,8 @@ double TABessel::BesselY0(double x){
 } // end of member function BesselY0
 
 double TABessel::BesselJ1(double x){
-  double sign = TAMath::sign(x);
-  x = sign;
+  const double sign = TAMath::sign(x);
+  x = fabs(x);
 
   if(x < 8.){
     double y = x*x;
@@ -135,8 +137,7 @@ double TABessel::BesselY(int n, double x){
   if(1 == n) return BesselY1(x);
 
   // calculate Yn using Y(n+1)=2n/x*Yn-Y(n-1)
-  double byp, bym = BesselY0(x), by = BesselY1(x);
-  double tox = 2./x; // two over x
+  double byp, by = BesselY1(x), bym = BesselY0(x), tox = 2./x; // two over x
   for(int i = 1; i < n; i++){
     byp = i*tox * by - bym;
     bym = by; by = byp;
@@ -153,10 +154,10 @@ static const double BIGNO = 1.e10, BIGNI = 1.e-10;
 double TABessel::BesselJ(int n, double x){
   if(0 == n) return BesselJ0(x);
   if(1 == n) return BesselJ1(x);
-
-  double sign = TAMath::sign(x);
-  x = fabs(x);
   if(0. == x) return 0.;
+
+  const double sign = TAMath::sign(x);
+  x = fabs(x);
 
   double tox = 2./x; // two over x
   double bjp, bjm = BesselJ0(x), bj = BesselJ1(x);
@@ -165,28 +166,30 @@ double TABessel::BesselJ(int n, double x){
       bjp = i*tox * bj - bjm;
       bjm = bj; bj = bjp;
     } // end for over i
-    return bj;
+    return n & 1 ? sign * bj : bj;
   } // end if
 
   // downward recurrence from an even nmax
-  int nmax = 2.*( (n+int(sqrt(ACC*n)))/2. );
+  int nmax = 2.*((n+int(sqrt(ACC*n)))/2.);
   double sum = 0., ans = 0.;
   // 1 = J0 + 2J2 + 2J4 + 2J6 + ...
-  bool isAdd = false; // if put J into addition
+  bool isAdd = false; // whether to put J into addition
   bjp = 0.; bj = 1.;
-  for(int i = nmax; i > 0.; i--){
-    bjm = i*tox *bj - bjp;
+  for(int i = nmax; i > 0; i--){
+    bjm = i*tox *bj - bjp; // J_(i-1) = 2i/x*J_(i) - J_(i+1)
     bjp = bj; bj = bjm;
     if(fabs(bj) > BIGNO){ // renormalize to prevent overflows
       bj *= BIGNI; bjp *= BIGNI;
       sum *= BIGNI; ans *= BIGNI;
     } // end if
-    if(isAdd) sum += bj;
+    if(isAdd) sum += bj; // sum += J_(i-1)
     isAdd = !isAdd;
-    if(i == n) ans = bj;
+    if(i == n) ans = bjp; // ans = J_(i)
   } // end for over i
   sum = 2. * sum - bj; // J0 + 2J2 + 2J4 + 2J6 + ...
-  ans /= sum; // normalize Jn
+  ans /= sum; // normalize to J(n,x)
+  // normalize with BesselI0(x), also work, but not chosen by Numerical Receipes in C
+  // ans *= BesselI0(x) / bj;
   return n & 1 ? sign * ans : ans;
 } // end of the member function BesselJ
 
@@ -231,7 +234,7 @@ double TABessel::BesselK0(double x){
 } // end of member function BesselK0
 
 double TABessel::BesselI1(double x){
-  double sign = TAMath::sign(x);
+  const double sign = TAMath::sign(x);
   x = fabs(x);
 
   double y = x / 3.75;
@@ -296,26 +299,55 @@ double TABessel::BesselI(int n, double x){
 
   if(0 == n) return BesselI0(x);
   if(1 == n) return BesselI1(x);
-
-  double sign = TAMath::sign(x);
-  x = fabs(x);
   if(0. == x) return 0.;
+
+  const double sign = TAMath::sign(x);
+  x = fabs(x);
 
   double tox = 2./x; // two over x
   double bip = 0., bi = 1., bim, ans;
   // downward recurrence from an even nmax
-  int nmax = 2.*( n+int(sqrt(ACC*n)) );
-  // 1 = I0 - 2J2 + 2J4 - 2J6 + ...
-  for(int i = nmax; i > 0.; i--){
-    bim = bip - i*tox *bi;
+  const int nmax = 2*(n+int(sqrt(ACC*n)));
+  // 1 = I0 - 2I2 + 2I4 - 2I6 + ...
+  for(int i = nmax; i > 0; i--){
+    bim = bip + i*tox *bi; // I_(i-1) = 2i/x*I_(i) + I_(i+1)
     bip = bi; bi = bim;
     if(fabs(bi) > BIGNO){ // renormalize to prevent overflows
       bi *= BIGNI;
       bip *= BIGNI;
       ans *= BIGNI;
     } // end if
-    if(i == n) ans = bi;
+    if(i == n) ans = bip; // ans = I_(i)
   } // end for over i
-  ans *= BesselI0(0) / bi; // normalize Jn
+  ans *= BesselI0(x) / bi; // normalize with BesselI0(x)
   return n & 1 ? sign * ans : ans;
 } // end of the member function BesselI
+
+TEST_CASE("Bessel Functions", "[bessel]"){
+  CHECK(TABessel::BesselJ0(0.) == Approx(1.).epsilon(1e-8));
+  CHECK(TABessel::BesselJ0(-1.) == Approx(0.765197686558).epsilon(1e-8));
+  CHECK(TABessel::BesselJ1(0.) == 0.);
+  CHECK(TABessel::BesselJ1(1.) == Approx(0.44005058574493351596).epsilon(1e-8));
+  CHECK(TABessel::BesselJ1(-100.) == Approx(0.077145352014112158033).epsilon(1e-8));
+  CHECK(TABessel::BesselY0(34.) == Approx(0.13340404928332927).epsilon(1e-8));
+  CHECK(TABessel::BesselY1(0.007) == Approx(-90.95810991058349).epsilon(1e-8));
+  CHECK(TABessel::BesselI0(0.) == Approx(1.).epsilon(1e-80));
+  CHECK(TABessel::BesselI1(0.) == Approx(0.).epsilon(1e-80));
+  CHECK(TABessel::BesselI(2, 0.) == Approx(0.).epsilon(1e-80));
+  CHECK(TABessel::BesselI0(0.007) == Approx(1.0000122500375155).epsilon(1e-8));
+  CHECK(TABessel::BesselI1(0.007) == Approx(0.0035000214375437684).epsilon(1e-8));
+  CHECK(TABessel::BesselK0(0.007) == Approx(5.077851098595914).epsilon(1e-8));
+  CHECK(TABessel::BesselK1(0.007) == Approx(142.8376205032313).epsilon(1e-8));
+
+  CHECK(TABessel::BesselJ(13, 24.02) == Approx(0.17584946240004562).epsilon(1e-8));
+  CHECK(TABessel::BesselJ(13, -24.02) == Approx(-0.17584946240004562).epsilon(1e-8));
+  CHECK(TABessel::BesselY(3, 1.8) == Approx(-1.3895534320337317).epsilon(1e-7));
+  CHECK(TABessel::BesselI(4, 1.8) == Approx(0.032076938121930604).epsilon(1e-8));
+  CHECK(TABessel::BesselI(4, -1.8) == Approx(0.032076938121930604).epsilon(1e-8));
+  CHECK(TABessel::BesselK(5, 1.02) == Approx(326.1251715718971).epsilon(1e-8));
+
+  CHECK(TABessel::BesselY(4, 18.8) == Approx(-0.07506118168847412).epsilon(1e-8));
+  CHECK(TABessel::BesselI(5, 18.02) == Approx(3.1203375898434822e6).epsilon(1e-7));
+  CHECK(TABessel::BesselI(5, -18.02) == Approx(-3.1203375898434822e6).epsilon(1e-7));
+  CHECK(TABessel::BesselK(6, 18.02) == Approx(1.1491147309986076e-8).epsilon(1e-8));
+} // end of TEST_CASE

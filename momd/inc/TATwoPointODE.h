@@ -32,13 +32,19 @@ public:
   /// i.e. TAEqSetSolver::Newton zeros function f(v), which is calculated by routine
   /// this routine, namely, shoot. The user-supplied routine derives(x,y,dydx) supplies
   /// derivatives information to the ODE integrator.
-  void Shoot(int n, const double *v, double *f);
-  void operator()(int n, const double *v, double *f){ Shoot(n, v, f); }
+  virtual void Shoot(const double *v, double *f);
+  /// to accommodate into the Newton root-finding routine
+  /// n2: the dimension of the Eq set for root-finding, usually the number of boundary
+  /// conditions to be determined at the other side (x2). Well as you can see, it's
+  /// irrelevant here. It has been taken care of in member function void score(...)
+  virtual void operator()(int n2, const double *v, double *f){ Shoot(v, f); }
 
   /// the following are user-specific routines dependent of the certain ODEs to be solved ///
   /// calculates the discrepancy vector f[0..n2] of the ending boundary conditions,
   /// given the vector y[0..n-1] at the endpoint x2
   virtual void score(double x2, const double *y, double *f) = 0;
+
+  virtual void SetRange(double x1, double x2);
 
 protected:
   /// integration range

@@ -41,10 +41,12 @@ public:
   /// Parameters held fixed will return zero covariances. Users should supply a
   /// routine fun(x, funci, ma, p) that returns the ma basis functions evaluated at
   /// x in the array funci[0...ma-1]. p here is for possible parameters in the Gaussians
+  /// q is the goodness-of-fit, referring to LinearFit(...)
   /// Ref. Numerical Recipes in C: p675
   static void LSMFit(const double *x, const double *y, const double *dy, int ndata,
       int ma, double *a, bool *isFit, matrix &covar, double &chi2,
-      void (*fun)(double x, double *funci, int ma, const double *p), const double *p = nullptr);
+      void (*fun)(double x, double *funci, int ma, const double *p),
+      const double *p = nullptr, double *q = nullptr);
 };
 
 #endif

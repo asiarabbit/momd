@@ -5,25 +5,26 @@
   \brief A collection of methods to fit data to certain models.
   \author SUN Yazhou, aisa.rabbit@163.com
   \date Created: 2020/07/27
-  \date Last modified: 2020/09/06 by SUN Yazhou
+  \date Last modified: 2020/09/10 by SUN Yazhou
   \copyright 2020 SUN Yazhou
   \copyright MOMD project, Anyang Normal University, IMP-CAS
 */
 
 #include <cmath>
+#include <catch2/catch.hpp>
 #include "TAFit.h"
 #include "TAMath.h"
 #include "TAException.h"
 
 /// Given a set of data x[0...ndata-1] and y[0...ndata-1] with standard deviations
-/// sigy[0...ndata-1]. Fit them to a straight line by minimizing chi2. Returned
-/// are a and b, and their respective probable uncertainties.siga and sigb, the
+/// sigy[0...ndata-1]. Fit them to a straight line y(x) = a + bx by minimizing chi2.
+/// Returning a and b, and their respective probable uncertainties.siga and sigb, the
 /// chi-square chi2 and the goodness-of-fit probability q (that the fit would
 /// have chi2 this large or larger under the model given by the fitting). If
 /// dy[0] <= 0., then the standard deviations are assumed to be unavailable: q
 /// is returned as 1.0 and the normalization of chi2 is to unit standard deviation
 /// on all points.
-/// Ref. Numerical Recipes in C, p689.
+/// Ref. Numerical Recipes in C, p665.
 void TAFit::LinearFit(const double *x, const double *y, const double *dy, int ndata,
     double &a, double &b, double &siga, double &sigb, double &chi2, double &q){
   // stt=\sum_i{1/sigi*(xi-sx/s), sx=\sum_i{xi/sigi^2}, sy=\sum_i{yi/sigi^2}
@@ -101,12 +102,13 @@ void TAFit::LinearFit(const double *x, const double *y, const double *dy, int nd
 /// Ref. Numerical Recipes in C: p675
 void TAFit::LSMFit(const double *x, const double *y, const double *dy, int ndata,
     int ma, double *a, bool *isFit, matrix &covar, double &chi2,
-    void (*fun)(double x, double *funci, int ma, const double *p), const double *p){
+    void (*fun)(double x, double *funci, int ma, const double *p),
+    const double *p, double *q){ // q is the goodness-of-fit, referring to LinearFit(...)
   int nFit = 0; // number of parameters to be fitted
   for(int i = 0; i < ma; i++) if(isFit[i]) nFit++;
   if(!nFit) TAException::Error("TAFit", "LSMFit: No parameters to be fitted.");
   double beta[nFit]{}, funci[ma]{}; // beta=A^T.b, funci=func_i(x)
-  for(int i = 0 ; i < nFit; i++) for(int j = 0 ; j < nFit; j++) covar[i][j] = 0.;
+  for(int i = 0 ; i < nFit; i++) for(int j = 0; j < nFit; j++) covar[i][j] = 0.;
 
   // loop over data to accumulate coefficients of the normal equations
   int jj = 0, kk = 0; // jj, kk: subscripts for beta and covar
@@ -119,13 +121,13 @@ void TAFit::LSMFit(const double *x, const double *y, const double *dy, int ndata
     for(int j = jj = 0; j < ma; j++){
       if(isFit[j]){
         const double wt = funci[j]/wt0;
-        for(int k = kk = 0; k < j; k++) if(isFit[k]) covar[jj][kk++] += funci[k]*wt;
+        for(int k = kk = 0; k <= j; k++) if(isFit[k]) covar[jj][kk++] += funci[k]*wt;
         beta[jj++] += yi*wt;
       } // end outer if
     } // end for over j
   } // end loop over data points
   // fill in covar above the diagonal from symmetry
-  for(int i = 1; i < nFit; i++) for(int j = i + 1; j < nFit; j++) covar[i][j] = covar[j][i];
+  for(int i = 0; i < nFit; i++) for(int j = i + 1; j < nFit; j++) covar[i][j] = covar[j][i];
   // solve matrix equation covar*a=b using Gauss-Jordan elimination
   // covar would be inversed inplace, and the solution would be stored in beta
   TAMath::GaussJordan(covar, nFit, beta);
@@ -140,4 +142,44 @@ void TAFit::LSMFit(const double *x, const double *y, const double *dy, int ndata
   } // end for over i
   // expand covar to include the fixed parameters and in a[0...ma-1] order
   TAMath::FillCovar(covar, ma, isFit, nFit);
+  if(q) *q = TAMath::gammaq(0.5*(ndata-nFit), 0.5*chi2);
 } // end of member function LSMFit
+
+
+void f(double x, double *f, int ma, const double *p){
+  for(int i = 0; i < ma; i++) f[i] = pow(x, i);
+} // powers of x
+TEST_CASE("LSM Fit", "[lsm]"){
+  SECTION("Linear Fit"){
+    // chi2 are the fitting chi2, and q is the goodness-of-fit:
+    // \int_{chi2}^{\infty}f(u,v)du, where f(u,v) is v-nof chi2 distribution
+    const int n = 5;
+    double a, b, da, db, chi2, q; // y = a + b*x;
+    double x[n] = {1., 2., 3., 4., 5.};
+    double y[n] = {1., 2., 3., 4., 5.};
+    double dy[n] = {};
+    TAFit::LinearFit(x, y, dy, n, a, b, da, db, chi2, q);
+    CHECK(a == 0.);
+    CHECK(b == 1.);
+    CHECK(da == 0.);
+    CHECK(db == 0.);
+    CHECK(chi2 == 0.);
+  } // end of section0
+  SECTION("LSM General Fit"){
+    const int n = 5;
+    double x[n] = {1., 2., 3., 4., 5.};
+    double y[n] = {1., 17., 63., 154., 305.}; // -3/2*x+5/2*x^3
+    double dy[n] = {0.1, 0.1, 0.1, 0.1, 0.1};
+    const int ma = 4;
+    double aa[ma]; matrix cov(ma, ma);
+    bool isFit[ma] = {true, true, true, true};
+    double chiq, q;
+    TAFit::LSMFit(x, y, dy, n, ma, aa, isFit, cov, chiq, f, 0, &q);
+    CHECK(aa[0] == Approx(0.).margin(1e-10));
+    CHECK(aa[1] == Approx(-1.5).epsilon(1e-10));
+    CHECK(aa[2] == Approx(0.).margin(1e-10));
+    CHECK(aa[3] == Approx(2.5).epsilon(1e-10));
+    CHECK(q == Approx(1.).epsilon(1e-10));
+    CHECK(chiq == Approx(0.).margin(1e-10));
+  } // end of section1
+} // end of TEST_CASE
