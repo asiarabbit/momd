@@ -64,9 +64,12 @@ public:
   /// \param nvar number of coupled ODEs
   /// If kmax != 0 results are stored at approximate intervals kdxsave within kmax steps
   /// illegal values passed would be ignored
-  void SetSave(int maxStepCount, double maxStepSize, int nvar);
+  void SetSave(int maxStepCount, double mindxsave, int nvar);
+  void SetNvar(int nvar){ SetSave(fmax, fdxsave, nvar); } // number of odes in the ODE set
+  void SetNmax(int nmax){ SetSave(nmax, fdxsave, fnvar); } // maximum saved steps
+  void SetMindxsave(int dxsave){ SetSave(fmax, dxsave, fnvar); } // minimum step size for savings
   void SetEPS(double eps); ///< relative error for each step
-  void SetMinStep(double hmin); ///< minimum step allowed
+  void SetMinStep(double hmin); ///< minimum step allowed in RKstepper
   const double *GetYatX2(){ return fy; }
 
 protected:
@@ -75,7 +78,7 @@ protected:
   /// calculates the n-vector y[0..n-1] (satisfying the starting boundary conditions, of course)
   /// given the freely specifiable variables of v[0..n2-1] at the initial point x1
   virtual void load(double x1, const double *v, double *y) = 0;
-  double *fy; ///< for storing the solution vector
+  double *fy; ///< for storing the solution vector at the end point x2
   double EPS; ///< relative error for each step
   double fh1, fhmin; // fhmin: allowd minimum step size
   int fnOK, fnBAD; // nOK and nBAD: counts of steps where input h is adopted and rejected
@@ -87,7 +90,7 @@ protected:
   ///!!! value of kmax and kdxsave should be specified in the calling program !!!///
   int fmax; ///< maximum length of the solution array to be stored
   double fdxsave; ///< only saves solutions for steps wtih h > dxsave, user specific
-  int fnvar; // the dimenstion of the ODE
+  int fnvar; // the dimension of the ODE
   int fcount; /// real dimension of the solution array (fcount*fnvar)
   ///!!! memory allocation of fxp and fyp should be in the calling program !!!///
   double *fxp; ///< for storing intermediate results of the solution of the ODEs

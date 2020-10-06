@@ -6,7 +6,7 @@
   program. It is also responsible for generating various momentum distributions.
   \author SUN Yazhou, aisa.rabbit@163.com
   \date Created: 2020/07/09
-  \date Last modified: 2020/09/04 by SUN Yazhou
+  \date Last modified: 2020/10/05 by SUN Yazhou
   \copyright 2020 SUN Yazhou
   \copyright MOMD project, Anyang Normal University, IMP-CAS
 */
@@ -26,12 +26,16 @@ using std::ifstream;
 using std::vector;
 using std::istringstream;
 
-TAMOMDIS::TAMOMDIS(const string &configFile) : fConfigFile(configFile){}
+TAMOMDIS::TAMOMDIS(const string &configFile) : fConfigFile(configFile), fBound(0),
+    fSc(0), fSn(0), fMOM_M(0){
+  fVecConfig.reserve(19); // at least 19 parameters would be pushed into this vector
+} // end of the constructor
 
 TAMOMDIS::~TAMOMDIS(){
-  if(fSMatrix){ delete fSMatrix; fSMatrix = nullptr; }
+  if(fSc){ delete fSc; fSc = nullptr; }
+  if(fSn){ delete fSn; fSn = nullptr; }
   if(fBound){ delete fBound; fBound = nullptr; }
-  if(fMOM){ delete fMOM; fMOM = nullptr; }
+  if(fMOM_M){ delete fMOM_M; fMOM_M = nullptr; }
 } // end of the destructor
 
 void TAMOMDIS::Go(){
@@ -46,12 +50,16 @@ void TAMOMDIS::Configure(){
 
   LoadConfigFile(); // assign fVecConfig
   // to calculate the S-matrix and fit it for alphaj and betaj //
-  // vv[0-4]: ZP, AP, ZT, AT, Ek
+  // vv[0-4]: ZP, AP, ZT, AT, Ek, Zc, Ac
   const auto &vv = fVecConfig;
-  fSMatrix = new TASMatrix(vv[0], vv[1], vv[2], vv[3], vv[4]);
+  const int zP = vv[0], aP = vv[1], zT = vv[2], aT = vv[3], zc = vv[5], ac = vv[6];
+  const double Ek = vv[4]; // MeV/u
+  const int zv = zP - zc, av = aP - ac;
+  fSc = new TASMatrix(zc, ac, zT, aT, Ek);
+  fSn = new TASMatrix(zv, av, zT, aT, Ek);
   // to solve the radial wavefunction
   fBound = new TABound(vv);
-  fMOM = new TAMOMDIS_M(this);
+  fMOM_M = new TAMOMDIS_M(this);
 
   isCalled = true;
 } // end of member function Prepare
@@ -72,8 +80,8 @@ void TAMOMDIS::Parallel(){
   // accumulate over m
   double momStr[kNmom]{}, momDiff[kNmom]{}, momTotal[kNmom]{};
   for(int m = 0; m <= l; m++){
-    sigmaStr_M[m] = fMOM->ParallelStr(m, momStr_M[m]);
-    sigmaDiff_M[m] = fMOM->ParallelDiff(m, momDiff_M[m]);
+    sigmaStr_M[m] = fMOM_M->ParallelStr(l, m, momStr_M[m]);
+    sigmaDiff_M[m] = fMOM_M->ParallelDiff(l, m, momDiff_M[m]);
     for(int i = kNmom; i--;) momTotal_M[m][i] = momStr_M[m][i] + momDiff_M[m][i];
     if(0 != m){ // take in the -m part
       sigmaStr_M[m] *= 2.;
@@ -95,7 +103,7 @@ void TAMOMDIS::Parallel(){
   /////----- OUTPUT THE RESULT -----/////
   TAOutput::PrintKOCS(l, sigmaStr_M, sigmaStr, sigmaDiff_M,
     sigmaDiff, sigmaTotal_M, sigmaTotal);
-  TAOutput::PrintToFile(kNmom, fMOM->GetMomArr(), momTotal, "mom.txt");
+  TAOutput::PrintToFile(kNmom, fMOM_M->GetMomArr(), momTotal, "mom.txt");
 } // end of the member function Parallel
 
 // read configFile to fVecConfig //
@@ -125,3 +133,21 @@ void TAMOMDIS::LoadConfigFile(){
     TAException::Warn("TAMOMDIS", "LoadConfigFile: fVecConfig size is 0. Empty config file?");
   isCalled = true;
 } // end of the memeber function LoadConfigFile
+
+TABound *TAMOMDIS::GetBound(){
+  if(!fBound) Configure();
+  return fBound;
+} // end of member function GetBound
+double TAMOMDIS::GetRl(double r){ return GetBound()->GetRl(r); } ///< the radial wavefunction
+/// returns the S-matrix of the core-target
+TASMatrix *TAMOMDIS::GetSc(){
+  if(!fSc) Configure();
+  return fSc;
+} // end of member function GetSMatrix
+/// returns the S-matrix of the valence nucleon-target
+TASMatrix *TAMOMDIS::GetSn(){
+  if(!fSn) Configure();
+  return fSn;
+} // end of member function GetSMatrix
+cdouble TAMOMDIS::GetSc(double b){ return GetSc()->SMatrix(b); }
+cdouble TAMOMDIS::GetSn(double b){ return GetSn()->SMatrix(b); }

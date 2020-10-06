@@ -25,8 +25,10 @@ public:
   /// given n points in arrays x and y, and input x, this routine returns the
   /// interpolated func value y at xx, and assigning the error estimate to dy.
   /// Ref. Numerical Receipes in C: p109
-  static T PolyInter(const double *x, const T *y, int n, double xx,
-      T *dy = nullptr);
+  static T PolyInter(const double *x, const T *y, int n, double xx, T *dy = nullptr);
+  /// \param len is the length of array x (or y), so that the program would choose
+  /// the closest interval to envelope xx in the center
+  static T PolyInter(const double *x, const T *y, int len, int n, double xx, T *dy = nullptr);
 };
 
 #include "TAInterpolate.hpp"

@@ -6,7 +6,7 @@
   tool class, so it is defined to be a static class.
   \author SUN Yazhou, aisa.rabbit@163.com
   \date Created: 2020/07/09
-  \date Last modified: 2020/09/08 by SUN Yazhou
+  \date Last modified: 2020/10/04 by SUN Yazhou
   \copyright 2020 SUN Yazhou
   \copyright MOMD project, Anyang Normal University, IMP-CAS
 */
@@ -22,12 +22,8 @@
 
 using std::swap;
 using std::max;
-
-/// sign of a number
-double TAMath::sign(double c){
-  if(c >= 0.) return 1.;
-  return -1.;
-} // end of member function sign
+using std::cout;
+using std::endl;
 
 /// returns the value ln[Gamma(xx)] for xx > 0.
 double TAMath::gammaln(double xx){

@@ -30,9 +30,9 @@ using std::min;
 /// i.e. TAEqSetSolver::Newton zeros function f(v), which is calculated by routine
 /// this routine, namely, shoot. The user-supplied routine derives(x,y,dydx) supplies
 /// derivatives information to the ODE integrator
-void TATwoPointODE::Shoot(const double *v, double *f){
-  fmax = 0; // 0: not store intermediate results
-  load(fx1,v,fy); // assign y
+void TATwoPointODE::Shoot(const double *v, double *f, int nmax){
+  fmax = nmax; // 0: not store the intermediate results
+  load(fx1,v,fy); // assign fy
   ODEIntegrator(fx1,fx2);
   score(fx2,fy,f); // calculate f
 } // end of member function Shoot

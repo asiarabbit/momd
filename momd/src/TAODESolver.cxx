@@ -170,7 +170,7 @@ void TAODESolver::ODEIntegrator(double *ystart, int nvar, double x1, double x2, 
 } // end of member function ODEIntegrator
 
 int TAODESolver::GetSolution(double *x, double *y, int ndim) const{
-  if(fcount <= 0) TAException::Error("TAODESolver",
+  if(fmax <= 0 || fcount <= 0) TAException::Error("TAODESolver",
     "GetSolution: Length of the solution array is zero or minus: %d", fcount);
   if(ndim < 0 || ndim >= fnvar) TAException::Error("TAODESolver",
     "GetSolution: abnormal ndim, should be within [0, fnvar), ndim: %d", ndim);
@@ -181,19 +181,30 @@ int TAODESolver::GetSolution(double *x, double *y, int ndim) const{
   return fcount;
 } // end of member function GetSolution
 
-void TAODESolver::SetSave(int maxStepCount, double maxStepSize, int nvar){
-  if(maxStepSize > 0. || maxStepSize != fdxsave) fdxsave = maxStepSize;
+void TAODESolver::SetSave(int maxStepCount, double mindxsave, int nvar){
+  if(nvar <= 0) TAException::Error("TAODESolver", "SetSave: nvar is 0 or minus");
+  if(maxStepCount < 0) TAException::Error("TAODESolver", "SetSave: maxStepCount is minus");
+  if(mindxsave <= 0.) TAException::Error("TAODESolver", "SetSave: mindxsave is 0 or minus");
+  if(mindxsave != fdxsave) fdxsave = mindxsave;
   if(nvar == fnvar && maxStepCount == fmax) return; // no need for memoroy change
 
-  if(nvar > 0) fnvar = nvar;
-  if(maxStepCount >= 0) fmax = maxStepCount;
-  if(fy)  delete [] fy;
-  fy  = new double[fnvar]{};
-  if(!fmax) return;
-  if(fxp) delete [] fxp;
-  fxp = new double[fmax]{};
-  if(fyp) delete fyp;
-  fyp = new matrix(nvar, fmax);
+  if(maxStepCount != fmax){
+    fmax = maxStepCount;
+    if(fmax){
+      if(fxp) delete [] fxp;
+      fxp = new double[fmax]{};
+    }
+  } // end the outer if
+
+  if(nvar != fnvar){
+    fnvar = nvar;
+
+    if(fy) delete [] fy;
+    fy = new double[fnvar]{};
+    if(fyp) delete fyp;
+    if(fmax) fyp = new matrix(fnvar, fmax);
+    else fyp = nullptr;
+  } // end if
 } // end of member function SetSave
 //< relative error for each step
 void TAODESolver::SetEPS(double eps){

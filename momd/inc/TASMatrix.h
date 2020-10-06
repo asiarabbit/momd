@@ -34,7 +34,7 @@ public:
 
   /// calculate and output the S-matrix
   cdouble SMatrix(double b) const;
-  ///< real and imag part of S-matrix, in an array (0, kBMax) with step h=kBMax/fNB
+  /// real and imag part of S-matrix, in an array (0, kBMax) with step h=kBMax/fNB
   void SMatrix(double *b, double *smr, double *smi) const;
   /// fit the S-matrix to an expansion of Gaussians
   /// the results are stored in input arrays alphaj and betaj and members fAlphajR,I
@@ -42,7 +42,9 @@ public:
 
   double *GetAlphajR();
   double *GetAlphajI();
+  double GetRL(){ return fRL; }
   void SetRL(double rl){ fRL = rl; }
+  int GetNGaus(){ return fNG; }
   /// gaussians used for S-Matrix expansion, \retval array funci[ma] evaluated at x
   static void gaus(double x, double *funci, int ma, const double *p);
 

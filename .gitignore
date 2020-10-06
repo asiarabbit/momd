@@ -38,8 +38,9 @@
 *.odt
 
 # text files || content
-*.txt
+#*.txt
 
 # ignore directories
 build*/*
 docs/*
+Lab*/*

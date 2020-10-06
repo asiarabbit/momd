@@ -19,8 +19,7 @@
 /// interpolated func value y at xx, and assigning the error estimate to dy.
 /// Ref. Numerical Receipes in C: p109
 template<typename T>
-T TAInterpolate<T>::PolyInter(const double *x, const T *y, int n,
-    double xx, T *dy){
+T TAInterpolate<T>::PolyInter(const double *x, const T *y, int n, double xx, T *dy){
   // find the element in array x that is closest to xx
   int nm = 0;
   double dx, dxm = fabs(xx-x[0]);
@@ -53,4 +52,16 @@ T TAInterpolate<T>::PolyInter(const double *x, const T *y, int n,
   if(dy) *dy = ddy; // the error estimator
 
   return result;
+} // end of member function PolyInter
+
+/// \param len is the length of array x (or y), so that the program would choose
+/// the closest interval to envelope xx in the center
+/// \param n has the same meaning as in the other overload of PolyInter
+template<typename T>
+T TAInterpolate<T>::PolyInter(const double *x, const T *y, int len, int n, double xx, T *dy){
+  int i = 0, nh = n/2;
+  while(x[i++] < xx);
+  i = i < nh ? 0 : i - nh;
+  if(i + n > len) i = len - n; // so that it does not step out of the border
+  return TAInterpolate<T>::PolyInter(x+i, y+i, n, xx, dy);
 } // end of member function PolyInter

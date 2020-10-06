@@ -32,7 +32,8 @@ public:
   /// i.e. TAEqSetSolver::Newton zeros function f(v), which is calculated by routine
   /// this routine, namely, shoot. The user-supplied routine derives(x,y,dydx) supplies
   /// derivatives information to the ODE integrator.
-  virtual void Shoot(const double *v, double *f);
+  /// \param nmax: maximum number of steps that can be saved, 0 to disable the saving
+  virtual void Shoot(const double *v, double *f, int nmax = 0);
   /// to accommodate into the Newton root-finding routine
   /// n2: the dimension of the Eq set for root-finding, usually the number of boundary
   /// conditions to be determined at the other side (x2). Well as you can see, it's

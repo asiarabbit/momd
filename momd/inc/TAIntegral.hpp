@@ -6,7 +6,7 @@
   Ref. Numerical Recipes in C 1988-1992, Cambridge U. Press
   \author SUN Yazhou, aisa.rabbit@163.com
   \date Created: 2020/07/22
-  \date Last modified: 2020/07/22 by SUN Yazhou
+  \date Last modified: 2020/10/06 by SUN Yazhou
   \copyright 2020 SUN Yazhou
   \copyright MOMD project, Anyang Normal University, IMP-CAS
 */
@@ -30,7 +30,7 @@ T TAIntegral<T, FUNCTOR>::trapzd(const FUNCTOR &fun, double a, double b, int n){
   // T_2n = 1/2*(T_n+H_n), H_n = h*\sum_{i=0}^{n-1}{fun(x_{i+1/2})}
   int nn = 1; // the number of additional interior points: 2 to the power n-1
   for(int i = n-1; i--;) nn <<= 1; // nn = pow(2, n-1)
-  T h = (b-a)/nn, x = a + 0.5*h, hn = 0.;
+  double h = (b-a)/nn, x = a + 0.5*h; T hn = 0.;
   for(int i = 0; i < nn; i++, x += h) hn += fun(x);
   tn = 0.5*(tn+h*hn); // Tn->T2n, this replaces s by its refined value
   return tn;
@@ -68,7 +68,7 @@ T TAIntegral<T, FUNCTOR>::Simpson(const FUNCTOR &fun, double a, double b){
     tn = trapzd(fun, a, b, i++);
     sn = (4.*tn-tnm)/3.;
     if(i > 5) // avoid spurious early convergence
-      if(fabs(sn-snm) <= epsilon*snm) return sn;
+      if(fabs(sn-snm) <= fabs(epsilon*snm)) return sn;
     tnm = tn; snm = sn;
   } // end while
   TAException::Error("TAIntegral", "Simpson(): Too many steps occurred.");
@@ -89,7 +89,7 @@ T TAIntegral<T, FUNCTOR>::Romberg(const FUNCTOR &fun, double a, double b){
     s[i] = trapzd(fun, a, b, i);
     if(i+1 >= np){
       romb = TAInterpolate<T>::PolyInter(h+i+1-np, s+i+1-np, np, 0., &dromb);
-      if(fabs(dromb) < epsilon*fabs(romb)) return romb;
+      if(fabs(dromb) < fabs(epsilon*romb)) return romb;
     }
     // this is the key step. since h^2, not h, is the argument for the extrapolation
     // each time h haves, it entails a factor of (1/2)^2, i.e. 0.25

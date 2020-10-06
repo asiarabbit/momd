@@ -107,7 +107,7 @@ Roundoff errorr problem occurred.", slope);
 template <typename FUNC>
 void TAEqSetSolver<FUNC>::Newton(double *x, int n, int &check, FUNC &func){
   static const double MAXITS = 200; // maximum iteration times
-  static const double TOLF = 1.e-7; // criterion for convergence on func, IMPORTANT, 1.e-4
+  static const double TOLF = 1.e-8; // criterion for convergence on func, IMPORTANT, 1.e-4
   static const double TOLMIN = 1.e-6; // check for spurious convergence of f (to a local minimum)
   static const double TOLX = 1.e-8; // convergence criterion for delta x: |delta x|<TOFLX -> return
   static const double STEPMAX = 100.; // maximum step = STEPMAX * ||x||

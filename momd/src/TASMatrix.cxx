@@ -8,21 +8,23 @@
   takes care of the fitting as well.
   \author SUN Yazhou, aisa.rabbit@163.com
   \date Created: 2020/07/08
-  \date Last modified: 2020/09/10 by SUN Yazhou
+  \date Last modified: 2020/10/06 by SUN Yazhou
   \copyright 2020 SUN Yazhou
   \copyright MOMD project, Anyang Normal University, IMP-CAS
 */
 
 #include <fstream>
+#include <cstring>
 #include "TASMatrix.h"
 #include "TAEikonalPhase.h"
 #include "TAFit.h"
+#include "TABound.h"
 
 static const cdouble I(0., 1.); // imaginary number unit I
 
 TASMatrix::TASMatrix(int zP, int aP, int zT, int aT, double ek){
-  fNG = 21; fRL = 50;
-  fNB = 200; fBMax = 1000.; // fm
+  fNG = 21; fRL = 50.;
+  fNB = 200; fBMax = TABound::INFTY; // fm
   fEikonalPhase = new TAEikonalPhase(zP, aP, zT, aT, ek);
 } // end of the constructor
 TASMatrix::~TASMatrix(){

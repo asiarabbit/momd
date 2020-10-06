@@ -29,25 +29,6 @@ static const double u = TAMath::uMeV();
 static const double fourPi = 4.*TAMath::Pi();
 static const cdouble I(0., 1.); // imaginary number unit I
 
-// the integrand to calculate the eikonal nuclear phase
-// to avoid tackling complex numers, (I+alphaNN) is ommitted here
-class TAPhaseN : public TAFun<double>{
-public:
-  TAPhaseN(TAEikonalPhase *phase, double b) : p(phase), fB(b){}
-
-  virtual double operator()(double q) const override{
-    const double pden = exp(-TAMath::sqr(q*p->fAlphaP)/4.); // nucleon size factor
-    return q*
-      TAFourier::Fourier2D(q, p->fNRP, p->fRP, p->fRhoP)*pden * // rhoPq
-      TAFourier::Fourier2D(q, p->fNRT, p->fRT, p->fRhoT)*pden * // rhoTq
-      exp(-p->fBetaNN*q*q)*TABessel::BesselJ0(q*fB);
-  } // end the member function operator()
-
-protected:
-  TAEikonalPhase *p;
-  double fB; // the impact parameter
-};
-
 TAEikonalPhase::TAEikonalPhase(int zP, int aP, int zT, int aT, double ek)
     : fZP(zP), fAP(aP), fZT(zT), fAT(aT), fEk(ek){
   fMu = fAP*fAT/(fAP+fAT)*u;
@@ -120,9 +101,15 @@ cdouble TAEikonalPhase::GetPhaseN(double b){
   if(!fNRP || !fNRT) TAException::Error("TAEikonalPhase",
     "GetPhaseN: Densities may not be assigned yet.");
   // Romberg: compute integral \int_0^\infty{q*rhoP*rhoT*fNN*J0(qb)}
-  // chiN is the integrand, over 0-500. fm
-  return fSigmaNN/fourPi*(I+fAlphaNN) *
-    TAIntegral<double, TAPhaseN>::Romberg(TAPhaseN(this, b), 0., 300.);
+  static const auto &ph = [=](double q)->double{
+    const double pden = exp(-TAMath::sqr(q*fAlphaP)/4.); // nucleon size factor
+    return q*
+      TAFourier::Fourier2D(q, fNRP, fRP, fRhoP)*pden * // rhoPq
+      TAFourier::Fourier2D(q, fNRT, fRT, fRhoT)*pden * // rhoTq
+      exp(-fBetaNN*q*q)*TABessel::BesselJ0(q*b);
+  }; // end of the lambda expression
+  return TAIntegral<double, decltype(ph)>::Romberg(ph, 0., 300.) *
+    fSigmaNN/fourPi*(I+fAlphaNN);
 } // end member function GetPhaseN
 
 /// \retval eikonal Coulumb phase = 2\eta*ln(kb)
