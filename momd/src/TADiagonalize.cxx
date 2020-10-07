@@ -4,17 +4,18 @@
   \brief A collection of matrix diagonalization methods.
   \author SUN Yazhou
   \date Created: 2020/09/27
-  \date Last modified: 2020/10/04 by SUN Yazhou
-  \copyright SUNNY project, Anyang Normal University, IMP-CAS
+  \date Last modified: 2020/10/07 by SUN Yazhou
+  \copyright MOMD project, Anyang Normal University, IMP-CAS
 */
 
 #include <cmath>
 #include <vector>
 #include <algorithm>
+#include <catch2/catch.hpp>
 #include "TADiagonalize.h"
 #include "TAException.h"
-#include "TAMath.h"
 #include "TAMatrix.h"
+#include "TAMath.h"
 
 using std::vector;
 using std::max;
@@ -32,6 +33,7 @@ inline void rotate(double s, double tau, double &aij, double &akl){
   akl += s*(g  -akl*tau);
 } // end rotate
 int TADiagonalize::Jacobi(matrix &a, int n, double *d, matrix &v){
+  if(!a.IsSymmetric()) TAException::Error("TADiagonalize", "Jacobi: Input matrix not symmetric.");
   int p, q, nrot = 0; // subscripts for the rotation matrix, nrot: the implemented rotations
   const int nn = n, n2 = n*n;
   double b[nn], z[nn]; // b is to accumulate increments(stored in z) of diagonal elements
@@ -57,7 +59,7 @@ int TADiagonalize::Jacobi(matrix &a, int n, double *d, matrix &v){
         g = 100.*fabs(a[p][q]);
         // after four sweeps, skip the rotation if the off-diagonal element
         // is too small: less than the least significant digit + 2 of a_pp and a_qq
-        if(i >= 4 && fabs(d[p]) + g == fabs(d[p]) && fabs(d[q]) + g == fabs(d[q]))
+        if(i > 3 && fabs(d[p]) + g == fabs(d[p]) && fabs(d[q]) + g == fabs(d[q]))
           a[p][q] = 0.;
         else if(fabs(a[p][q]) > thre){
           h = d[q] - d[p];
@@ -67,16 +69,16 @@ int TADiagonalize::Jacobi(matrix &a, int n, double *d, matrix &v){
             t = 1./(fabs(theta)+sqrt(1.+theta*theta));
             if(theta < 0.) t = -t;
           } // end else
-          const double c = 1./sqrt(t*t), s = t*c, tau = s/(1.+c);
+          const double c = 1./sqrt(1.+t*t), s = t*c, tau = s/(1.+c);
           h = t*a[p][q];
           z[p] -= h; z[q] += h; // z and d are stored separatly to minimize roundoff
           d[p] -= h; d[q] += h; // d here updated only to help choosing the pivot, i.e. p & q
           a[p][q] = 0.;
           // rotate the above-diagonal elements of a //
-          for(int j = 0;   j < p-1; j++) rotate(s, tau, a[j][p], a[j][q]);
-          for(int j = p+1; j < q-1; j++) rotate(s, tau, a[p][j], a[j][q]);
-          for(int j = q+1; j < n;   j++) rotate(s, tau, a[p][j], a[q][j]);
-          for(int j = 0;   j < n;   j++) rotate(s, tau, v[j][p], v[j][q]); // V'=VP
+          for(int j = 0;   j < p; j++) rotate(s, tau, a[j][p], a[j][q]);
+          for(int j = p+1; j < q; j++) rotate(s, tau, a[p][j], a[j][q]);
+          for(int j = q+1; j < n; j++) rotate(s, tau, a[p][j], a[q][j]);
+          for(int j = 0;   j < n; j++) rotate(s, tau, v[j][p], v[j][q]); // V'=VP
           nrot++;
         } // end else if
       } // end for over q
@@ -114,6 +116,7 @@ void TADiagonalize::EigenSort(double *d, matrix &v, int n){
 
 /// Householder reduction of a real symmetric matrix to tridiagonal form
 /// On output, a is replaced by the orthogonal matrix Q effecting the transformation
+/// Note that Q^T=P_1.P_2..P_{n-2}, so it's T=Q^T.a.Q, not the other way around
 /// d[0..n-1] returns the diagonal and e[0..n-1] the sub-diagonal, with e[0]=0
 /// This implementation is transcribbed from Numerical Recipes in C, p474
 #define EIGENVEC // switch on if eigenvectors are wanted
@@ -304,3 +307,30 @@ void TADiagonalize::Lanczos(matrix &a, int n, double *d, matrix &z, double *x){
     } // end if
   } // end for over j
 } // end of member function Lanczos
+
+TEST_CASE("Test diagonalization algorithm", "[diag]"){
+  static const int n = 5;
+  matrix a(n,n);
+  a = {1,2,3,4,5, 2,3,4,5,1, 3,4,5,1,2, 4,5,1,2,3, 5,1,2,3,4};
+  matrix a0 = a;
+  double d[n];
+  SECTION("Jacobi"){
+    TADiagonalize::JacobiSort(a,n,d);
+    // matrix(1,n,d).Print(); a.Print();
+    CHECK(d[0] == Approx(15.).epsilon(1.e-10));
+    CHECK(d[1] == Approx(4.25325404176).epsilon(1.e-10));
+    CHECK(d[2] == Approx(2.62865556059566).epsilon(1.e-10));
+    CHECK(a[0][0] == Approx(0.4472135955).epsilon(1.e-10));
+    CHECK(a[3][2] == Approx(0.563522005301).epsilon(1.e-10));
+    CHECK(a[4][3] == Approx(-0.563522005301).epsilon(1.e-10));
+  } // end SECTION Jacobi
+  SECTION("Tridiagonalize"){
+    TADiagonalize::TridiagQLSort(a,n,d); // more efficient than JacobiSort
+    CHECK(d[0] == Approx(15.).epsilon(1.e-10));
+    CHECK(d[1] == Approx(4.25325404176).epsilon(1.e-10));
+    CHECK(d[2] == Approx(2.62865556059566).epsilon(1.e-10));
+    CHECK(a[0][0] == Approx(0.4472135955).epsilon(1.e-10));
+    CHECK(a[3][2] == Approx(-0.563522005301).epsilon(1.e-10));
+    CHECK(a[4][3] == Approx(-0.563522005301).epsilon(1.e-10));
+  } // end SECTION Tridiagonalize
+} // end of TEST_CASE

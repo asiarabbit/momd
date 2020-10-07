@@ -16,3 +16,6 @@ aux_source_directory(src LIB_SRCS)
 add_library(libsunny SHARED ${LIB_SRCS})
 set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 set_target_properties(libsunny PROPERTIES OUTPUT_NAME "sunny")
+
+set(LIB_LIST libmomd)
+target_link_libraries(libsunny ${LIB_LIST})

@@ -183,6 +183,7 @@ vec_t<T> &TAMatrix<T>::operator[](int r){
 template<class T>
 const vec_t<T> &TAMatrix<T>::operator[](int r) const{
   // XXX: return (*this)[row]; WRONG: const function won't call non-const ones
+  if(r < 0 || r >= fNRow)
     TAException::Error("TAMatrix<T>",
       "operator[]: Input row %d out of range, max: %d", r, fRowVEC.size()-1);
   return *fRowVEC[r];
@@ -260,10 +261,12 @@ TAMatrix<T> TAMatrix<T>::operator*(const TAMatrix<T> &ma) const{
   DotProduct(ma, ma_t); return ma_t;
 } // end operator*(const TAMatrix<T> &)
 template<class T>
-void TAMatrix<T>::DotProduct(const TAMatrix<T> &ma, TAMatrix<T> &r){ ///<\retval r=this*ma
+void TAMatrix<T>::DotProduct(const TAMatrix<T> &ma, TAMatrix<T> &r) const{ ///<\retval r=this*ma
   if(fNColumn != ma.nr())
     TAException::Error("TAMatrix<T>", "DotProduct: Dimension mismatch: ma v.s. this");
   if(!ma.fData) TAException::Error("TAMatrix<T>", "DotProduct: Input matrix fData is NULL.");
+  if(&ma == &r)
+    TAException::Error("TAMatrix<T>", "DotProduct: the right matrix cannot be the same as the result matrix");
 
   const int ir = nr(), ic = ma.nc(), n = ma.nr();
   if(r.nr() != ir || r.nc() != ic) TAException::Error("TAMatrix<T>", "DotProduct: r's Dimension Match");
@@ -273,7 +276,7 @@ void TAMatrix<T>::DotProduct(const TAMatrix<T> &ma, TAMatrix<T> &r){ ///<\retval
   } // end for over rows and columns
 } // end of member function DotProduct
 template<class T> /// \retval r=this+k*ma
-void TAMatrix<T>::Add(const TAMatrix<T> &ma, TAMatrix<T> &r){
+void TAMatrix<T>::Add(const TAMatrix<T> &ma, TAMatrix<T> &r) const{
   if(!ma.fData) TAException::Error("TAMatrix<T>", "Add: Input matrix fData is NULL.");
   if(DimensionMatch(ma))
     TAException::Error("TAMatrix<T>", "Add: Dimension Match");
@@ -281,7 +284,7 @@ void TAMatrix<T>::Add(const TAMatrix<T> &ma, TAMatrix<T> &r){
   for(int i = 0; i < fNRow; i++) r[i] += ma[i]; // vector addition
 } // end of member function Add
 template<class T>
-void TAMatrix<T>::Subtract(const TAMatrix<T> &ma, TAMatrix<T> &r){ ///<\retval r=this-ma
+void TAMatrix<T>::Subtract(const TAMatrix<T> &ma, TAMatrix<T> &r) const{ ///<\retval r=this-ma
   if(!ma.fData) TAException::Error("TAMatrix<T>", "Subtract: Input matrix fData is NULL.");
   if(DimensionMatch(ma))
     TAException::Error("TAMatrix<T>", "Subtract: Dimension Match");
@@ -389,8 +392,11 @@ template<class T>
 bool TAMatrix<T>::IsSymmetric() const{
   if(!IsSquare()) return false;
   for(int i = 0; i < fNRow; i++){
-    for(int j = 0; j < fNColumn; j++){
-      if(fabs((*fRowVEC[i])[j] - (*fColVEC[i])[j]) > 1E-6) return false;
+    for(int j = i+1; j < fNColumn; j++){
+      const T g = 100.*fabs((*fRowVEC[i])[j] - (*fRowVEC[j])[i]);
+      const T &d1 = (*fRowVEC[i])[i], &d2 = (*fRowVEC[j])[j];
+      // less than (machine precision+2)*(corresponding diagonal elements)
+      if(fabs(d1)+g != fabs(d1) || fabs(d2)+g != fabs(d2)) return false;
     } // end for over j
   } // end for over i
   return true;

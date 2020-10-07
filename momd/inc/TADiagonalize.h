@@ -5,7 +5,7 @@
   \author SUN Yazhou
   \date Created: 2020/09/27
   \date Last modified: 2020/09/29 by SUN Yazhou
-  \copyright SUNNY project, Anyang Normal University, IMP-CAS
+  \copyright MOMD project, Anyang Normal University, IMP-CAS
 */
 
 #ifndef _TADiagonalize_h_
@@ -30,6 +30,14 @@ public:
   /// the input eigenvalues into descending order, and rearranges the eigenvectors
   /// correspondingly. The method is straight insertion.
   static void EigenSort(double *d, matrix &v, int n);
+  static void JacobiSort(matrix &a, int n, double *d, matrix &v){
+    Jacobi(a,n,d,v); EigenSort(d,v,n);
+  }
+  static void JacobiSort(matrix &a, int n, double *d){
+    matrix v(n,n);
+    Jacobi(a,n,d,v); EigenSort(d,v,n);
+    a = v;
+  }
   /// Householder reduction of a real symmetric matrix to tridiagonal form
   /// On output, a is replaced by the orthogonal matrix Q effecting the transformation
   /// d[0..n-1] returns the diagonal and e[0..n-1] the sub-diagonal, with e[0]=0
@@ -47,6 +55,11 @@ public:
   /// the matrix output by Tridiagonalize. In either case, the kth column of z returns the
   /// normalized eigenvector corresponding to d[k].
   static void TridiagQLImplicit(double *d, double *e, int n, matrix &z);
+  static void TridiagQLSort(matrix &a, int n, double *d){
+    double *e = new double[n];
+    Tridiagonalize(a,n,d,e); TridiagQLImplicit(d,e,n,a); EigenSort(d,a,n);
+    delete [] e;
+  }
   /// An initial attempt for implementation of Lanczos algorithm ///
   /// Lanczos algorithm is devised for a few largest (in modulus) eigenvalues and
   /// the corresponding eigenvectors of huge sparse matrix A

@@ -6,7 +6,7 @@
   various kinds of matrix operations.
   \author SUN Yazhou, asia.rabbit@163.com
   \date Created: 2020/02/09
-  \date Last modified: 2020/02/25, by SUN Yazhou
+  \date Last modified: 2020/10/07, by SUN Yazhou
   \copyright 2020 SUN Yazhou
   \copyright SUNNY project, Anyang Normal University, IMP-CAS
 */
@@ -42,7 +42,7 @@ public:
   TAMatrix<T> &operator=(int val){ return (*this) = double(val); }
   vec_t<T> &operator[](int row); ///< operator[row][column]
   const vec_t<T> &operator[](int row) const; ///< const version
-  bool DimensionMatch(const TAMatrix &b){ return b.nr() == nr() && b.nc() == nc(); }
+  bool DimensionMatch(const TAMatrix &b) const{ return b.nr() == nr() && b.nc() == nc(); }
 
   // operations //
   /// calculations in place
@@ -60,9 +60,9 @@ public:
 	TAMatrix<T> operator-(const T &b) const; ///< -b*I
 	TAMatrix<T> operator*(const TAMatrix<T> &ma) const;
   TAMatrix<T> operator*(const T &val) const;
-  void DotProduct(const TAMatrix<T> &ma, TAMatrix<T> &r); ///<\retval r=this*ma
-  void Add(const TAMatrix<T> &ma, TAMatrix<T> &r); ///<\retval r=this+ma
-  void Subtract(const TAMatrix<T> &ma, TAMatrix<T> &r); ///<\retval r=this-ma
+  void DotProduct(const TAMatrix<T> &ma, TAMatrix<T> &r) const; ///<\retval r=this*ma
+  void Add(const TAMatrix<T> &ma, TAMatrix<T> &r) const; ///<\retval r=this+ma
+  void Subtract(const TAMatrix<T> &ma, TAMatrix<T> &r) const; ///<\retval r=this-ma
 
   operator T() const;
 	TAMatrix<T> Transpose() const; ///< NOT inplace

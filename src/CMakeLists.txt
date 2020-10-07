@@ -8,8 +8,8 @@
 ######################################################
 
 # include_directories(${ROOT_INCLUDE_DIRS}) # ROOT header path
+include_directories(${PROJECT_SOURCE_DIR}/fci/inc) # SUNNY header path
 include_directories(${PROJECT_SOURCE_DIR}/momd/inc)
-include_directories(${PROJECT_SOURCE_DIR}/sunny/inc) # SUNNY header path
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
 set(LIB_LIST libmomd libsunny) # ${ROOT_LIBRARIES}
 
