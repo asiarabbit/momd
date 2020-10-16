@@ -47,7 +47,7 @@ TAHamiltonian *TAHamiltonian::Instance(){
 }
 
 /// \retval calculate and return the matrix form of the hamiltonian
-TAMatrix2D &TAHamiltonian::Matrix(){
+matrix &TAHamiltonian::Matrix(){
   if(fMatrix && !fMatrix->IsEmpty()){
     return *fMatrix;
   }
@@ -72,7 +72,7 @@ TAMatrix2D &TAHamiltonian::Matrix(){
 
   // loop to generate each matrix element for the hamiltonian //
   if(fMatrix){ delete fMatrix; fMatrix = nullptr; }
-  fMatrix = new TAMatrix2D(fNMBSD, fNMBSD); // allot memery to a nxn matrix
+  fMatrix = new matrix(fNMBSD, fNMBSD); // allot memery to a nxn matrix
   // initialize to a specific initial value //
   for(int i = fNMBSD; i--;) for(int j = fNMBSD; j--;) (*fMatrix)[i][j] = -9999.;
 
@@ -166,9 +166,9 @@ double TAHamiltonian::MatrixElement3N(int rr, int cc){
   return me / 36.; // 36 = (3!)^2
 } // end member function MatrixElement3N
 
-void TAHamiltonian::SetCoe1N(const TAMatrix2D &coe1N){
+void TAHamiltonian::SetCoe1N(const matrix &coe1N){
   if(fCoe1N){ delete fCoe1N; fCoe1N = nullptr; }
-  fCoe1N = new TAMatrix2D(coe1N);
+  fCoe1N = new matrix(coe1N);
 } // end of member function SetCoe1N
 void TAHamiltonian::SetCoe2N(const TAMatrix4D &coe2N){
   if(fCoe2N){ delete fCoe2N; fCoe2N = nullptr; }
@@ -198,7 +198,7 @@ void TAHamiltonian::InitializeCoefficient(){
   if(fCoe3N){ delete fCoe3N; fCoe3N = nullptr; }
 
   // initialize fCoe1N //
-  fCoe1N = new TAMatrix2D(fNSPState, fNSPState);
+  fCoe1N = new matrix(fNSPState, fNSPState);
   // initialze fCoe1
   const vector<TASingleParticleState *> &spsVec =
     TASingleParticleStateManager::Instance()->GetSPStateVec();
@@ -210,7 +210,7 @@ void TAHamiltonian::InitializeCoefficient(){
   } // end for over rows
 
   // initialize nucleon-correlation force coefficients //
-  TAMatrix2D tmp(fNSPState, fNSPState); // all elements would be set to 1 //
+  matrix tmp(fNSPState, fNSPState); // all elements would be set to 1 //
   tmp = 0.;
   for(int i = 0; i < fNSPState; i++){
     for(int j = i + 1; j < fNSPState; j++){
@@ -220,7 +220,7 @@ void TAHamiltonian::InitializeCoefficient(){
     } // end for over j
   } // end for over i
   // initialize fCoe2N //
-  TAMatrix2D tmpMinus = -1. * tmp;
+  matrix tmpMinus(tmp); tmp *= -1.;
   fCoe2N = new TAMatrix4D(fNSPState, fNSPState);
   for(int i = 0; i < fNSPState; i++){
     for(int j = i; j < fNSPState; j++){

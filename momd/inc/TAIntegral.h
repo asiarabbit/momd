@@ -16,7 +16,7 @@
 
 #include "TAException.h"
 
-template<typename T, typename FUNCTOR>
+template <typename T, typename FUNCTOR>
 class TAIntegral{
 public:
   TAIntegral(){}

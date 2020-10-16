@@ -18,7 +18,7 @@
 /// given n points in arrays x and y, and input x, this routine returns the
 /// interpolated func value y at xx, and assigning the error estimate to dy.
 /// Ref. Numerical Receipes in C: p109
-template<typename T>
+template <typename T>
 T TAInterpolate<T>::PolyInter(const double *x, const T *y, int n, double xx, T *dy){
   // find the element in array x that is closest to xx
   int nm = 0;
@@ -57,7 +57,7 @@ T TAInterpolate<T>::PolyInter(const double *x, const T *y, int n, double xx, T *
 /// \param len is the length of array x (or y), so that the program would choose
 /// the closest interval to envelope xx in the center
 /// \param n has the same meaning as in the other overload of PolyInter
-template<typename T>
+template <typename T>
 T TAInterpolate<T>::PolyInter(const double *x, const T *y, int len, int n, double xx, T *dy){
   int i = 0, nh = n/2;
   while(x[i++] < xx);

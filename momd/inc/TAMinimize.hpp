@@ -299,7 +299,7 @@ void TAMinimize<FUNC>::Amoeba(matrix &p, double *y, int n, double ftol, FUNC &f,
       ytry = Amotry(p, y, psum, n, f, ih, 0.5);
       if(ytry >= ysave){ // still no signs of downhill. Better contract around point_il
         for(i = np; i--;) if(i != il){
-          for(j = n; j--;) p[i][j] = psum[j] = 0.5*(p[il]+p[i]);
+          for(j = n; j--;) p[i][j] = psum[j] = 0.5*(p[il][j]+p[i][j]);
           y[i] = f(psum); // totally n calls of f
         } // end for over i
       } // end if(ytry >= ysave)

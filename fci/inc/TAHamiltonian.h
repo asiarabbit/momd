@@ -20,6 +20,9 @@
 #include <string>
 #include "TAMatrix.h"
 
+typedef TAMatrix<matrix> TAMatrix4D; /// 4-th order tensor
+typedef TAMatrix<TAMatrix4D> TAMatrix6D; /// 6-th order tensor
+
 class TAManyBodySDList;
 
 using std::string;
@@ -31,10 +34,10 @@ public:
   /// \retval return the specific formula of the hamiltonian
   const char *Formula() const{ return fFormula.c_str(); }
   /// \retval calculate and return the matrix form of the hamiltonian
-  TAMatrix2D &Matrix();
+  matrix &Matrix();
   vec_t<double> &operator[](int i){ return Matrix()[i]; }
 
-  void SetCoe1N(const TAMatrix2D &coe1N);
+  void SetCoe1N(const matrix &coe1N);
   void SetCoe2N(const TAMatrix4D &coe2N);
   void SetCoe3N(const TAMatrix6D &coe3N);
   void SetMBSDListM(TAManyBodySDList *mbsd);
@@ -57,12 +60,12 @@ private:
 
   static TAHamiltonian *kInstance;
   /// \NOTE note that all these coeffiicients are supoosed to be user input
-  TAMatrix2D *fCoe1N; ///< coefficients for the 1-N part of H: <p|t+u|q>
+  matrix *fCoe1N; ///< coefficients for the 1-N part of H: <p|t+u|q>
   TAMatrix4D *fCoe2N; ///< coefficients for the 2-N part of H: <pq|v|rs>
   TAMatrix6D *fCoe3N; ///< coefficients for the 3-N part of H: <pqr|v_3|stu>
   /// M-scheme many-body SD list, to define the representation
   TAManyBodySDList *fMBSDListM; ///< \NOTE its memory doesn't need to be freed
-  TAMatrix2D *fMatrix; ///< the hamiltonian matrix in fMBSDListM basis
+  matrix *fMatrix; ///< the hamiltonian matrix in fMBSDListM basis
   int fNSPState; ///< number of single particle states
   int fNMBSD; ///< number of many-body Slater determinants in fMBSDListM
   string fFormula;

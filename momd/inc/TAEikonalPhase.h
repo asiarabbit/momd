@@ -38,8 +38,6 @@ public:
   void SetTargetDenstiy(int n, const double *r, const double *rho);
   void SetNucleonSize(double alphap){ fAlphaP = alphap; }
 
-  friend class TAPhaseN;
-
 protected:
   int fZP, fAP, fZT, fAT; // projectile and target (N, Z)
   double fEk; ///< Elab in MeV/u

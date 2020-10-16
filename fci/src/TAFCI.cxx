@@ -31,28 +31,28 @@ void TAFCI::Go(){
 //  if(!fHamiltonian) fHamiltonian = TAHamiltonian::Instance();
 
 //  fHamiltonian->InitializeCoefficient(); // DEBUG
-//  TAMatrix2D &H = fHamiltonian->Matrix();
+//  matrix &H = fHamiltonian->Matrix();
 //  H.Print();
 //  H.PrintInC();
 //  getchar(); // DEBUG
 
   const int n = 1; // H.nc();
-  TAMatrix2D H(n, n);
-  TAMatrix2D v(n);
+  matrix H(n, n);
+  matrix v(n);
   for(int i = n; i--;) v[i][0] = 1.;
 
   // solve the dominant eigenvalue and eigenvector using power method //
 
   // solve all of the eigenvalues using QR method //
   // firstly, let's implement QR factorization for H
-//  TAMatrix2D Q(n, n), R(n, n);
+//  matrix Q(n, n), R(n, n);
 //  TAMath::QR(H, Q, R);
 
   // QR method to calculate all the eigenvalues of a matrix
-  TAMatrix2D vv(n);
+  matrix vv(n);
 //  return;
   // Jacobi method to calculate all the eigenvalues and eigenvectors of a matrix
-  TAMatrix2D P(n, n);
+  matrix P(n, n);
 //  for(int i = H.nr(); i--;) H[i][i] -= 50.;
 //  TAMath::EigenPower(H, v);
 //  TAMath::EigenQR(H, vv);

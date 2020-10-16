@@ -5,7 +5,7 @@
 	\brief to print error, warnings, etc.
 	\author SUN Yazhou, asia.rabbit@163.com
 	\date Created: 2020/07/08
-	\date Last modified: 2020/07/08
+	\date Last modified: 2020/10/08
 	\copyright 2020, by SUN Yazhou
 	\copyright MOMD project, Anyang Normal University, IMP-CAS
 */
@@ -35,7 +35,7 @@ void TAException::Info(const char *cname, const char *fmt, ...){
 	vsprintf(omsg, msg, arg_ptr);
 	va_end(arg_ptr);
 	cout << omsg;
-}
+} // end of member function Info
 
 void TAException::Error(const char *cname, const char *fmt, ...){
 	static bool nomore = false;
@@ -60,12 +60,9 @@ void TAException::Error(const char *cname, const char *fmt, ...){
 			cout << "Aborting SUNNY...\n";
 			exit(1);
 		}
-		else if(!str.empty() && (str.c_str())[0] == 'n'){
-			nomore = true;
-		}
-		cout << endl;
+		else if(!str.empty() && (str.c_str())[0] == 'n') nomore = true;
 	}
-}
+} // end of member function Error
 
 void TAException::Warn(const char *cname, const char *fmt, ...){
 	static bool nomore = false;
@@ -90,12 +87,9 @@ void TAException::Warn(const char *cname, const char *fmt, ...){
 			cout << "Aborting SUNNY...\n";
 			exit(1);
 		}
-		else if(!str.empty() && (str.c_str())[0] == 'n'){
-			nomore = true;
-		}
-		cout << endl;
-	}
-}
+		else if(!str.empty() && (str.c_str())[0] == 'n') nomore = true;
+	} // end if
+} // end of member function Warn
 
 void TAException::Debug(const char *cname, const char *fmt, ...){
 	if(!fIsDebug) return;
@@ -110,4 +104,4 @@ void TAException::Debug(const char *cname, const char *fmt, ...){
 
 	cout << "Press ENTER to continue...";
 	getchar();
-}
+} // end of member function Debug

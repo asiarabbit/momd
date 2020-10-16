@@ -19,7 +19,7 @@
 /// method, only supposed to be used incrementally as
 ///  for(i=0;i<m;i++) s=trapzd(fun, a, b, i)
 /// \param FUNTOR should be a class with a method: double operator()(double)
-template<typename T, typename FUNCTOR>
+template <typename T, typename FUNCTOR>
 T TAIntegral<T, FUNCTOR>::trapzd(const FUNCTOR &fun, double a, double b, int n){
   if(b - a < 0) TAException::Error("TAIntegral", "trapzd(): b - a < 0");
   if(n < 0) TAException::Error("TAIntegral", "trapzd(): n < 0");
@@ -101,7 +101,7 @@ T TAIntegral<T, FUNCTOR>::Romberg(const FUNCTOR &fun, double a, double b){
 
 // integral of f(x) over domain [x[0],x[n-1]]. n is the length of x and f
 // composed with formula (8.3.6) p.212 Computing Method ver.3 by Guicheng Li
-template<typename T, typename FUNCTOR>
+template <typename T, typename FUNCTOR>
 T TAIntegral<T, FUNCTOR>::Simpson(int n, const double *x, const T *f){
   // number of individual Simpson intervals
   int k = (n-1) / 2; // f[n-1] is dropped in the case where n is even

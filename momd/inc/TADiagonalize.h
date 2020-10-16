@@ -1,7 +1,7 @@
 /**
   \file TADiagonalize.h
   \class TADiagonalize
-  \brief A collection of matrix diagonalization methods.
+  \brief A collection of matrix diagonalization methods
   \author SUN Yazhou
   \date Created: 2020/09/27
   \date Last modified: 2020/09/29 by SUN Yazhou
@@ -38,11 +38,20 @@ public:
     Jacobi(a,n,d,v); EigenSort(d,v,n);
     a = v;
   }
+
   /// Householder reduction of a real symmetric matrix to tridiagonal form
   /// On output, a is replaced by the orthogonal matrix Q effecting the transformation
   /// d[0..n-1] returns the diagonal and e[0..n-1] the sub-diagonal, with e[0]=0
   /// This implementation is transcribbed from Numerical Recipes in C, p474
   static void Tridiagonalize(matrix &a, int n, double *d, double *e);
+  /// triadiagonalize arrow symmetric matrix: z^T*a*z=T. e is the last row and
+  /// column of a; d is the diagonal of a. n is the dimension of the matrix
+  static void TridiagArrow(double *d, double *e, int n, matrix &z){
+    for(int i = n; i--;) for(int j = n; j--;) z[i][j] = 0.;
+    for(int i = n; i--;) z[i][i] = d[i];
+    for(int i = n-1; i--;) z[n-1][i] = z[i][n-1] = e[i+1];
+    Tridiagonalize(z,n,d,e);
+  } // end of member function TridiagArrow
   /// QL algorithm with implicit shifts, to determine the eigenvalues and eigenvectors
   /// of a real, symmetric, tridiagonal matrix, or of a real, symmetric matrix previously
   /// reduced by Tridiagonalize(...) above. On input, d[0..n-1] contains the diagonal
@@ -60,6 +69,7 @@ public:
     Tridiagonalize(a,n,d,e); TridiagQLImplicit(d,e,n,a); EigenSort(d,a,n);
     delete [] e;
   }
+
   /// An initial attempt for implementation of Lanczos algorithm ///
   /// Lanczos algorithm is devised for a few largest (in modulus) eigenvalues and
   /// the corresponding eigenvectors of huge sparse matrix A
@@ -67,7 +77,17 @@ public:
   /// matrix, whose eigenvalues and eigenvectors are good approximation of A's
   /// Given input matrix a[0..n-1][0..n-1], the routine returns first fiew (usually <=10)
   /// eigenvalues in d and the corresponding eigenvectors in z
+  /// Optionally user can provide the initial vector x, or it defaults to {1,1,..,1}
+  /// d should be of length n, for it is drafted in the program
   static void Lanczos(matrix &a, int n, double *d, matrix &z, double *x = nullptr);
+  /// Lanczos method featuring Ritz-pairs purging. Unwanted Ritz-pairs are deflated,
+  /// leaving a smaller Krylov space, where the Lanczos orthogonalization resumes
+  /// so that the unwanted Ritz-pairs are purged from the final constructed Krylov
+  /// space. This would speed the convergence to the wanted Ritz-pairs compared with
+  /// plain Lanczos algorithm. NOTE that we assume the largest eigenvalues are wanted
+  /// Ref.: http://people.inf.ethz.ch/arbenz/ewp/Lnotes/lsevp.pdf, p212
+  /// Ref.: K. Wu and H. D. Simon,SIAM J. Matrix Anal. Appl., 22 (2000), pp. 602–616
+  static void LanczosPurge(matrix &a, int n, double *d, matrix &z, double *x = nullptr);
 };
 
 #endif

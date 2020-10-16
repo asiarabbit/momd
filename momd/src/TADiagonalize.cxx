@@ -19,6 +19,7 @@
 
 using std::vector;
 using std::max;
+using std::min;
 
 /// computes all eigenvalues and eigenvectors of a real symmetric matrix
 /// a[0..n-1][0..n-1]. On output, elements of a are destroyed. d[0..n-1] returns
@@ -241,7 +242,7 @@ void TADiagonalize::TridiagQLImplicit(double *d, double *e, int n, matrix &z){
           s = f/r; c = g/r; // update s and c for current Givens transform
           g = d[i+1]-p; // update d[i+1] for the last Givens transform in g
           r = (d[i]-g)*s+2.*c*b; d[i+1] = g+(p=s*r); // update d[i+1] for current Givens transform
-          g = c*r-b; // updated sub-diagnoal element e[i] after current Givens transform
+          g = c*r-b; // updated sub-diagonoal element e[i] after current Givens transform
           // next loop can be omitted if eigenvectors are not wanted //
 #ifdef EIGENVEC
           for(int k = 0; k < n; k++){ // accumulate the rotations
@@ -274,45 +275,99 @@ inline double vprod(const matrix &q, const matrix &r, int n){ // vector inner pr
 }
 void TADiagonalize::Lanczos(matrix &a, int n, double *d, matrix &z, double *x){
   static const double EPS = 1.e-5; // eigenvalue accuracy standard
-  const int nn = n;
-  double e[nn]; for(int i = n; i--;) if(x) e[i] = x[i]; else e[i] = 1.;
+  static const int NMAX = 50; // maximum number of iterations
+  const int nm = min(n, NMAX), np = nm + 1;
+  double e[np]; // d is alpha and e is beta in the conventional notation
   // prepare for the start of the iterations //
-  matrix v(n), q(n,1,e), r(n); // q_{j-1}, q_j, q_{j+1}, 3 vectors
-  q.cv(0).normalize();
-  matrix Q(q); // to store the Lanczos vectors
-  a.DotProduct(q,r); // r=a.q
-  vector<double> alpha, beta; // diagonal and sub-diagonal of the tridiagonal matrix T_k
-  alpha.push_back(vprod(q,r,n));
-  r -= q*alpha[0];
-  beta.push_back(r.cv(0).norm());
+  matrix s(nm,nm); // to store the eigenpairs of Tk
+  matrix v(n), q(n,1,e), r(n); // q_{j-1}, qj, q_{j+1}, 3 basis vectors
+  for(int i = n; i--;) if(x) q[i][0] = x[i]; else q[i][0] = 1.;
+  q.cv(0).normalize(); matrix Q(q); // to store the Lanczos vectors
+  a.DotProduct(q,r); r.SelfAdd(-(d[0] = vprod(q,r,n)), q); // r = A*q - alphaj*qj
+  e[1] = r.cv(0).norm(); // the first off-diagonal of Tk, e[0] is not used
   // OK, here we commence the iteration //
-  for(int j = 1; j < n; j++){
-    v = q; q = r/beta[j-1]; // store old q and update q with normalized r
-    Q.PushBackColumn(new vec_t<double>(q.cv(0)));
-    a.DotProduct(q,r); r -= beta[j-1]*v; // r = A.q-beta_{j-1}.v;
-    alpha.push_back(vprod(q,r,n)); // alpha_j
-    r -= q*alpha[j];
-    beta.push_back(r.cv(0).norm());
-    // diagonalize T_k //
-    for(int i = j; i--;){ d[i] = alpha[i]; e[i] = beta[i]; }
-    matrix s(j,j); s = 1.; // to store the eigenvector matrix of T_k
-    TridiagQLImplicit(d, e, j, s);
-    // calculate the infNorm of beta_j*s_{ji}
+  for(int j = 1; j < nm; j++){
+    v = q; // q_{j-1}
+    r.Scale(1./e[j],q); // normalize qj in q
+    Q.PushBackColumn(q.cv(0));
+    a.DotProduct(q, r); // r = A*qj
+    r.SelfAdd(-e[j],v); // r -= beta_{j-1}*q_{j-1};
+    r.SelfAdd(-(d[j] = vprod(q,r,n)),q); // alpha_j=<qj|A|qj>, r -= alphaj*qj;
+    r.Purify(Q); // r -= Q*Q^T*r, to make lanczos vectors more orthogonal XXX
+    const int jj = j+1;
+    e[jj] = r.cv(0).norm(); // the next beta, equals |r|
+    s = 1.; // to store the eigenvector matrix of T_k
+    TridiagQLImplicit(d,e,jj,s); // diagonalize T_k
+    // calculate the infNorm of betaj*s_{ji}, to determine convergence
     double epsilon = 0.;
-    for(int i = j; i--;) epsilon = max(epsilon, fabs(s[j][i]*beta[j]));
-    if(epsilon <= EPS){ // get a satisfactory result
-      Q.DotProduct(s, z); // z = Q.s
-      delete [] x;
-      return;
-    } // end if
+    for(int i = jj; i--;) epsilon = max(epsilon, fabs(e[jj]*s[j][i]));
+    if(epsilon <= EPS){ Q.DotProduct(s, z); return; } // z=Q*s, the Ritz vector
   } // end for over j
 } // end of member function Lanczos
+
+/// Lanczos method featuring Ritz-pairs purging. Unwanted Ritz-pairs are deflated,
+/// leaving a smaller Krylov space, where the Lanczos orthogonalization resumes
+/// so that the unwanted Ritz-pairs are purged from the final constructed Krylov
+/// space. This would speed the convergence to the wanted Ritz-pairs compared with
+/// plain Lanczos algorithm. NOTE that we assume the largest eigenvalues are wanted
+/// Ref.: http://people.inf.ethz.ch/arbenz/ewp/Lnotes/lsevp.pdf, p212
+/// Ref.: K. Wu and H. D. Simon,SIAM J. Matrix Anal. Appl., 22 (2000), pp. 602–616.
+void TADiagonalize::LanczosPurge(matrix &a, int n, double *d, matrix &z, double *x){
+  static const double EPS = 1.e-8; // eigenvalue accuracy standard
+  // number of wanted eigenpairs and dimension for the plain Lanczos
+  static const int J = 3, K = J + 2; // J: number of the wanted eigenpairs
+  static const int NMAX = 100; // maximum number of iterations
+  const int nm = min(n, NMAX);
+  const int M = max(nm, K+4), np = nm+1; // dimension of the final Tk
+  double e[np]; // d is alpha and e is beta in the conventional notation
+  // prepare for the start of the iterations //
+  matrix v(n), q(n), r(n); // q_{j-1}, qj, q_{j+1}, 3 basis vectors
+  matrix s(M,M), st(M,M); st = 1.; // s: the eigenvector matrix of Tk, st set to E
+  for(int i = n; i--;) if(x) q[i][0] = x[i]; else q[i][0] = 1.;
+  q.cv(0).normalize(); matrix Q(q); // to store the Lanczos vectors
+  a.DotProduct(q,r); r.SelfAdd(-(d[0] = vprod(q,r,n)), q); // r = A*q - alphaj*qj
+  e[1] = r.cv(0).norm(); // the first off-diagonal of Tk, e[0] is not used
+  // commence the iteration
+  for(int j = 1; j < nm; j++){
+    v = q; // q_{j-1}
+    r.Scale(1./e[j],q); // normalize qj in q
+    Q.PushBackColumn(q.cv(0));
+    a.DotProduct(q,r); // r = A*qj
+    r.SelfAdd(-e[j],v); // r -= beta_{j-1}*q_{j-1};
+    r.SelfAdd(-(d[j] = vprod(q,r,n)),q); // alpha_j=<qj|A|qj>, r -= alphaj*qj;
+    r.Purify(Q); // r -= Q*Q^T*r, to make lanczos vectors more orthogonal XXX
+    const int jj = j+1;
+    e[jj] = r.cv(0).norm(); // betaj=|r|
+    if(K+1 == j) TridiagArrow(d,e,J+1,st); // tridiagonalize the mutant Tk
+    s = st; // acknowledge the transform from arrow to tridiagonal
+    // diagonalize T_k //
+    TridiagQLImplicit(d,e,jj,s); // eigenvalues in descending order is mandatory
+    // calculate the infNorm of betaj*s_{ji}
+    double epsilon = 0.;
+    for(int i = jj; i--;) epsilon = max(epsilon, fabs(e[jj]*s[j][i]));
+    if(epsilon <= EPS){ Q.DotProduct(s,z); return; } // z=Q*s, the Ritz vector
+    if(K-1 == j){ // K Ritz-vecs obtained, initiate the restart
+      // keep only the wanted Ritz-pairs, and update the tridiagonal matrix //
+      r.Scale(1./e[jj],q); // q_{k+1} = r/|r|
+      a.DotProduct(q,r); // r = a*q_{k+1}
+      r.SelfAdd(-d[j],q); // remove the q_{k+1} component
+      Q.DotProduct(s,z); // z=Q*s: calculate the Ritz vector
+      Q.FreeMemory(); // make space for the Ritz vectors
+      for(int i = 0; i < J; i++){
+        Q.PushBackColumn(z.cv(i)); // confirm zi as the new basis, update Tk and..
+        r.SelfAdd(-(e[i+1] = e[jj]*s[j][i]), z.cv(i)); // ..remove zi bits from r
+      } // end for over i
+      // OK, here we have the starting vector now, and the plain Lanczos..
+      d[jj] = r.cv(0).norm(); // ..can be restarted from here
+      j -= K-J; n -= K-J; // one more thing, squeeze the loop for the purge
+    } // end if(j == K)
+  } // end for over j
+} // end of member function LanczosRestart
 
 TEST_CASE("Test diagonalization algorithm", "[diag]"){
   static const int n = 5;
   matrix a(n,n);
   a = {1,2,3,4,5, 2,3,4,5,1, 3,4,5,1,2, 4,5,1,2,3, 5,1,2,3,4};
-  matrix a0 = a;
   double d[n];
   SECTION("Jacobi"){
     TADiagonalize::JacobiSort(a,n,d);
@@ -333,4 +388,20 @@ TEST_CASE("Test diagonalization algorithm", "[diag]"){
     CHECK(a[3][2] == Approx(-0.563522005301).epsilon(1.e-10));
     CHECK(a[4][3] == Approx(-0.563522005301).epsilon(1.e-10));
   } // end SECTION Tridiagonalize
+  SECTION("multiplicity"){
+    double dd[] = {1,2,2,3,4,5}; a.diag(dd);
+    TADiagonalize::TridiagQLSort(a,n,d);
+    CHECK(d[0] == Approx(4.).epsilon(1.e-10));
+    CHECK(d[2] == Approx(2.).epsilon(1.e-10));
+    CHECK(d[3] == Approx(2.).epsilon(1.e-10));
+  } // end SECTION multiplicity
 } // end of TEST_CASE
+
+TEST_CASE("Lanczos Test", "[lancz]"){
+  static const int n = 6;
+  matrix a(n,n), z(n,n); // automatically all initialized to 0
+  double d[n] = {0,1,2,3,4,100000}, x[n] = {1,1,1,1,1,1}; // (z,d) are the eigenpair
+  for(int i = n; i--;) a[i][i] = d[i];
+  a.Print();
+  TADiagonalize::Lanczos(a,n,d,z,x);
+} // end of TEST_CASE lanczos

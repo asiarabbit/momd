@@ -14,7 +14,7 @@
 #ifndef _TAFun_h_
 #define _TAFun_h_
 
-template<class T>
+template <class T>
 class TAFun{
 public:
   TAFun(){}

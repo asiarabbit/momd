@@ -15,7 +15,7 @@
 
 #include <complex>
 
-template<typename T>
+template <typename T>
 class TAInterpolate{
 public:
   TAInterpolate(){}
