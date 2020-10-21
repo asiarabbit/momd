@@ -381,16 +381,15 @@ void TADiagonalize::LanczosPurge(const matrix &a, int n, double *d, matrix &z, d
     double epsilon = 0.; // check for convergence
     for(int i = min(jj,J); i--;) epsilon = max(epsilon, fabs(beta[j]*s[j][i]));
     if(epsilon <= EPS || nm == j){
-      TAException::Info("TADiagonalize", "LanczosPurge: j=%d,epsilon=%e", j, epsilon);
       EigenSort(d,s,jj); Q.DotProduct(s, z);
       if(nm == j) break; else return;
     }
     if(K-1 == j && !restarted && restartCnt < NMAXRST){
-      cout << "epsilon: \033[34;1m" << epsilon << "\033[0m\n"; // DEBUG
-      printf("restartCnt: %d, j = %d\n", restartCnt, j); // DEBUG
-      for(int i = 0; i < jj; i++) printf("d[%d]: %f\n", i, d[i]); // DEBUG
-      for(int i = 0; i < jj; i++) printf("beta[%d]*s[%d][%d]: %f\n", j,j,i,beta[j]*s[j][i]); // DEBUG
-      getchar(); // DEBUG
+      // cout << "epsilon: \033[34;1m" << epsilon << "\033[0m\n"; // DEBUG
+      // printf("restartCnt: %d, j = %d\n", restartCnt, j); // DEBUG
+      // for(int i = 0; i < jj; i++) printf("d[%d]: %f\n", i, d[i]); // DEBUG
+      // for(int i = 0; i < jj; i++) printf("beta[%d]*s[%d][%d]: %f\n", j,j,i,beta[j]*s[j][i]); // DEBUG
+      // getchar(); // DEBUG
       // deflate j+1~K Ritz-pairs, and update the tridiagonal matrix //
       alpha.erase(alpha.begin()+J, alpha.end());
       beta.erase(beta.begin()+J, beta.end()-1);
@@ -481,7 +480,10 @@ TEST_CASE("Lanczos Test", "[lancz]"){
     double d[m]{}, x[m]{}; x[0] = 1.;
     // b.Print();
     TADiagonalize::LanczosPurge(b,m,d,zz,x); // Purge
-    matrix(m,1,d).Print();
-    zz.Print();
+    CHECK(d[0] == Approx(36.).epsilon(1.e-10));
+    CHECK(d[1] == Approx(10.452503719011021).epsilon(1.e-10));
+    CHECK(zz[m-1][m-1] == Approx(0.).margin(1.e-8));
+    // matrix(m,1,d).Print();
+    // zz.Print();
   } // end of SECTION purge
 } // end of TEST_CASE lanczos
