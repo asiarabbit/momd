@@ -79,7 +79,7 @@ public:
   /// eigenvalues in d and the corresponding eigenvectors in z
   /// Optionally user can provide the initial vector x, or it defaults to {1,1,..,1}
   /// d should be of length n, for it is drafted in the program
-  static void Lanczos(matrix &a, int n, double *d, matrix &z, double *x = nullptr);
+  static void Lanczos(const matrix &a, int n, double *d, matrix &z, double *x = nullptr);
   /// Lanczos method featuring Ritz-pairs purging. Unwanted Ritz-pairs are deflated,
   /// leaving a smaller Krylov space, where the Lanczos orthogonalization resumes
   /// so that the unwanted Ritz-pairs are purged from the final constructed Krylov
@@ -87,7 +87,7 @@ public:
   /// plain Lanczos algorithm. NOTE that we assume the largest eigenvalues are wanted
   /// Ref.: http://people.inf.ethz.ch/arbenz/ewp/Lnotes/lsevp.pdf, p212
   /// Ref.: K. Wu and H. D. Simon,SIAM J. Matrix Anal. Appl., 22 (2000), pp. 602–616
-  static void LanczosPurge(matrix &a, int n, double *d, matrix &z, double *x = nullptr);
+  static void LanczosPurge(const matrix &a, int n, double *d, matrix &z, double *x = nullptr);
 };
 
 #endif

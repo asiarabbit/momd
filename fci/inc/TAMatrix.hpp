@@ -16,6 +16,7 @@
 #include <typeinfo>
 #include <cmath>
 #include <utility>
+#include <algorithm>
 #include "TAException.h"
 
 using std::ios_base;
@@ -23,6 +24,7 @@ using std::cout;
 using std::endl;
 using std::setw;
 using std::move;
+using std::swap;
 
 template <class T>
 bool inline isBasic(); // is basic type or not, e.g., not struct or class object
@@ -70,8 +72,8 @@ void TAMatrix<T>::FreeMemory(){
   for(auto p : fColVEC) for(auto &t : *p) if(t) t = nullptr;
   for(vec_t<T> *&p : fRowVEC) if(p){ delete p; p = nullptr; }
   for(vec_t<T> *&p : fColVEC) if(p){ delete p; p = nullptr; }
-  fRowVEC.clear();
-  fColVEC.clear();
+  fRowVEC.clear(); fNRow = 0;
+  fColVEC.clear(); fNColumn = 0;
 } // end of the destructor
 
 template <class T>
@@ -297,10 +299,11 @@ void TAMatrix<T>::diag(T *d){
 } // end of member function diag
 
 /// copy the first (nr_,nc_) block
+template <class T>
 void TAMatrix<T>::copy(const TAMatrix<T> &ma, int nr_, int nc_){
   if(ma.nr() < nr_ || ma.nc() < nc_)
     TAException::Error("TAMatrix<T>", "copy: Input matrix smaller than required");
-  for(int i = 0; i < nr_; i++) for(int j = 0; j < nc_; j++) this[i][j] = ma[i][j];
+  for(int i = 0; i < nr_; i++) for(int j = 0; j < nc_; j++) (*this)[i][j] = ma[i][j];
 } // end of member function copy
 
 // display the matrix in matrix form
@@ -395,6 +398,22 @@ void TAMatrix<T>::PushBackColumn(const vec_t<T> &c){
   vec_t<T> *cv = new vec_t<T>(c);
   fColVEC.push_back(cv); fNColumn++;
   for(int i = 0; i < fNRow; i++) fRowVEC[i]->push_back(cv->at(i));
+} // end of member function PushBackColumn
+template <class T> // remove column [ic0, ic1)
+void TAMatrix<T>::EraseColumn(int ic0, int ic1){
+  if(ic0 > ic1) swap(ic0, ic1);
+  if(ic0 == ic1)
+    TAException::Error("TAMatrix<T>", "EraseColumn: the range size is zero");
+  if(fNColumn < ic1)
+    TAException::Warn("TAMatrix<T>", "EraseColumn: end of the range larger than nc().");
+
+  // free memory first
+  for(int i = ic0; i < ic1; i++) for(auto &p: *fColVEC[i]){ delete p; p = nullptr; }
+  for(int i = ic0; i < ic1; i++) for(auto &p: fRowVEC) if(p->at(i)) p->at(i) = nullptr;
+  for(int i = ic0; i < ic1; i++){ delete fColVEC[i]; fColVEC[i] = nullptr; }
+  fColVEC.erase(fColVEC.begin()+ic0, fColVEC.begin()+ic1);
+  for(auto &p: fRowVEC) p->erase(p->begin()+ic0, p->begin()+ic1);
+  fNColumn -= ic1 - ic0;
 } // end of member function PushBackColumn
 
 template <class T>

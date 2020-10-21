@@ -86,6 +86,7 @@ public:
   /// as the name indicates. these methods push a copy of r & c to the matrix
   void PushBackRow(const vec_t<T> &r);
   void PushBackColumn(const vec_t<T> &c);
+  void EraseColumn(int ic0, int ic1); // remove column [ic0, ic1)
   /// (*this) = Q^T*Q*(*this), so this is more orthogonal to vectors in Q
   void Purify(const TAMatrix<T> &Q);
 
