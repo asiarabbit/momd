@@ -13,6 +13,7 @@
 
 int main(){
 	TAManyBodySDManager *mbsdManager = TAManyBodySDManager::Instance();
+	mbsdManager->LoadConfigFile("../config/input.txt");
 	mbsdManager->MSchemeGo(); // Generate the M-scheme many-body basis
 
 	return 0;

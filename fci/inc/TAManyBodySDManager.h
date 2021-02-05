@@ -12,10 +12,10 @@
 #define _TAManyBodySDManager_h_
 
 #include <vector>
-#include <list>
+#include <string>
 
 using std::vector;
-using std::list;
+using std::string;
 
 class TAManyBodySD;
 class TAManyBodySDList;
@@ -24,9 +24,14 @@ class TAManyBodySDManager{
 public:
   virtual ~TAManyBodySDManager();
   static TAManyBodySDManager *Instance();
+  /// assign nparticle, nspstate, 2*M and the spstate space
+  void LoadConfigFile(const string &file);
   void GenerateManyBodySD();
   void MSchemeGo(); ///< generate the M-scheme many-body state basis
   TAManyBodySDList *GetMBSDListM();
+  int GetNParticle() const{ return fNParticle; }
+  int GetNSPState() const{ return fNSPState; }
+  int Get2M() const{ return f2M; }
 
 protected:
   TAManyBodySDManager();
@@ -34,6 +39,8 @@ protected:
   static TAManyBodySDManager *kInstance;
   vector<TAManyBodySD *> fManyBodySDVec; ///< the total MBSDs
   TAManyBodySDList *fManyBodySDListM; ///< M-scheme many-body basis
+  int fNParticle, fNSPState, f2M;
+  string fSPStatefile;
 };
 
 #endif

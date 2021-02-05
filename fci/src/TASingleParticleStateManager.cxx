@@ -47,7 +47,6 @@ int TASingleParticleStateManager::GetNSPState() const{
 	return fSPStateVec.size();
 } // end of member function GetNSPState
 
-
 // skip spaces and tabs, return subscript of the valid char
 inline int skipCrap(const char *s){
 	int tmp = 0;

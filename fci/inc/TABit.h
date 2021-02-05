@@ -2,12 +2,12 @@
   SUNNY Project, Anyang Normal University, IMP-CAS
   \file TABit.h
   \class TABit
-  \brief 128-bit for many-body basis in bit representation. This class is coined
-  to be a member of a many-body state. Also incorporated are create and
-  annhilate operations. This is also partly used as a light-weight MBSD.
+  \brief many-body Slater determinant in bit representation. This class is coined
+  to be a member of a many-body state. Also incorporated are create and annhilate
+  operations. This is also partly used as a light-weight MBSD. Inherited from bitset.
   \author SUN Yazhou, asia.rabbit@163.com
   \date Created: 2020/02/11
-  \date Last modified: 2020/02/11 by SUN Yazhou
+  \date Last modified: 2021/02/04 by SUN Yazhou
   \copyright 2020 SUN Yazhou
   \copyright SUNNY project, Anyang Normal University, IMP-CAS
 */
@@ -15,9 +15,14 @@
 #ifndef _TABit_h_
 #define _TABit_h_
 
-class TABit{
+#include <bitset>
+
+using std::bitset;
+static const int NBIT = 32;
+
+class TABit : public bitset<NBIT>{
 public:
-  TABit();
+  TABit(ulong n = 0); ///< n: bit arragement in decimal format
   TABit(const TABit &bit); ///< copy constructor
   TABit &operator=(const TABit &bit); ///< assignment constructor
   /// \retval: <*this|bit> with phase updated
@@ -40,7 +45,6 @@ public:
   void PrintInBit() const; ///< print in bit
 
 private:
-  unsigned fBit[4]; ///< 128-bit for 128 SP state capacity
   short fPhase; ///< 0, +-1
 };
 

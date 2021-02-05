@@ -19,7 +19,7 @@ public:
 	TASingleParticleState(int index, short n, short l,
 		short _2j, short _2mj, double energy);
 	virtual ~TASingleParticleState();
-	short GetMj(){ return f2mj; } /// \return the third component mj
+	short Get2Mj(){ return f2mj; } /// \return 2*mj
 	double GetEnergy(){ return fEnergy; }
 	void Print() const; ///< print the single particle state
 

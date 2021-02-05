@@ -40,8 +40,8 @@ protected:
 	int fIndex; ///< index of the object
 	short f2M; ///< the total jz*2
 	double fEnergy; ///< the total energy of the SD
-	TABit fBit; // bit representation of this, can hold 128 SP states
-	/// Dynamically memory allocation. The length is the number of particles
+	TABit fBit; // bit representation of this
+	/// Dynamical memory allocation. The length is the number of particles
 	int *fSPStateArr;
 };
 

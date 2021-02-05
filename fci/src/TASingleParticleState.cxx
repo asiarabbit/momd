@@ -32,4 +32,4 @@ void TASingleParticleState::Print() const{
 	cout << "   2j: " << setw(1) << f2j << "   2mj: " << setw(3) << f2mj;
 	cout << "   energy: " << setw(3) << fEnergy << std::endl;
 	cout << std::left;
-}
+} // end of member function Print

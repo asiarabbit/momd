@@ -4,11 +4,13 @@
 	in many-body problems which is a common question in many-body problems
 */
 
-#include "TAFCI.h"
+#include "TAHPairing.h"
 
 int main(){
-	TAFCI *fci = TAFCI::Instance();
-	fci->Go(); // Generate M-scheme many-body basis and establish H matrix
+	TAHPairing *pair = new TAHPairing("../config/input.txt");
+	matrix *mp = pair->Matrix();
+	mp->Print();
+
 
 	return 0;
 } // end of the main function

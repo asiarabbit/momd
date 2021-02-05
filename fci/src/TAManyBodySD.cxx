@@ -34,7 +34,7 @@ TAManyBodySD::TAManyBodySD(int index, int nParticle, int *SPState)
   }
   for(int i = 0; i < kNParticle; i++){
     TASingleParticleState *sp = (*this)[fSPStateArr[i]];
-    f2M += sp->GetMj();
+    f2M += sp->Get2Mj();
     fEnergy += sp->GetEnergy();
   }
   // conver fSPStateArr to bit into fBit
@@ -43,7 +43,7 @@ TAManyBodySD::TAManyBodySD(int index, int nParticle, int *SPState)
 
 TAManyBodySD::~TAManyBodySD(){
   if(fSPStateArr){
-    delete fSPStateArr;
+    delete [] fSPStateArr;
     fSPStateArr = nullptr;
   }
 } // end of the destructor

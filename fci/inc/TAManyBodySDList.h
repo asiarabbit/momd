@@ -34,12 +34,12 @@ public:
 	int GetNBasis() const{ return fManyBodySDVec.size(); }
 	TAManyBodySD *operator[](int i) const; ///< return fManyBodySDVec[i]
 
-	/// \retval <rr|a+_p * a_q|cc>
+	/// \retval <rr|a+_p * a_q|cc>, 1N force
 	int Integral(int rr, int p, int q, int cc) const;
-	/// \retval <rr|a+_p*a+_q * a_r*a_s|cc>
-	int Integral(int rr, int p, int q, int r, int s, int cc) const;
-	/// \retval <rr|a+_p*a+_q*a+_r * a_s*a_t*a_u|cc>
-	int Integral(int rr, int p, int q, int r, int s, int t, int u, int cc) const;
+	/// \retval <rr|a+_p*a+_q * a_s*a_r|cc>, 2N force
+	int Integral(int rr, int p, int q, int s, int r, int cc) const;
+	/// \retval <rr|a+_p*a+_q*a+_r * a_u*a_t*a_s|cc>, 3N force
+	int Integral(int rr, int p, int q, int r, int u, int t, int s, int cc) const;
 
 protected:
 	short f2M; ///< the uniform M*2 for this list

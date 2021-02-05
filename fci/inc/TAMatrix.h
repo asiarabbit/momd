@@ -38,7 +38,7 @@ public:
   TAMatrix<T> &operator=(TAMatrix<T> &&ma); ///< move assignment constructor
   /// {} initialization
   TAMatrix<T> &operator=(const std::initializer_list<T> &li);
-  TAMatrix<T> &operator=(double v); ///< initialize to E*val
+  TAMatrix<T> &operator=(double v); ///< initialize to E*v (identity matrix multiplied by v)
   TAMatrix<T> &operator=(int v){ return (*this) = double(v); } ///< initialize to E*val
   /// initialize to E*val
   vec_t<T> &operator[](int row); ///< operator[row][column]
@@ -63,7 +63,7 @@ public:
 
   explicit operator T() const;
 	TAMatrix<T> Transpose() const; ///< NOT inplace
-  void Initialize(); ///< set all the elements to zero
+  void Initialize(); ///< set all the elements to 0
   void diag(T *d); /// initialize to diagonal matrix with array d
   void copy(const TAMatrix<T> &ma, int nr_, int nc_); // copy the first (nr_,nc_) block
   // re-shape the matrix, do nothing if the shape remains

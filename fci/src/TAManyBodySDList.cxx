@@ -36,7 +36,8 @@ void TAManyBodySDList::Print() const{
   cout << f2M << endl;
   for(TAManyBodySD *mp : fManyBodySDVec) mp->Print();
   cout << "Totally there're " << fManyBodySDVec.size();
-  cout << " many-body Slater determinants in the list." << endl;
+  cout << " many-body Slater determinants in the list with f2M = ";
+  cout << f2M << "." << endl;
 }
 
 /// Print all the mbsd-s in bit mode
@@ -45,7 +46,8 @@ void TAManyBodySDList::PrintInBit() const{
   cout << f2M << " in bit mode" << endl;
   for(TAManyBodySD *mp : fManyBodySDVec) mp->PrintInBit();
   cout << "Totally there're " << fManyBodySDVec.size();
-  cout << " many-body Slater determinants in the list." << endl;
+  cout << " many-body Slater determinants in the list with f2M = ";
+  cout << f2M << "." << endl;
 }
 
 TAManyBodySD *TAManyBodySDList::operator[](int i) const{
@@ -65,20 +67,19 @@ int TAManyBodySDList::Integral(int rr, int p, int q, int cc) const{
   return rBit*cBit;
 } // end of member function Integral(rr,p,q,cc);
 /// \retval <rr|a+_p*a+_q * a_r*a_s|cc>
-int TAManyBodySDList::Integral(int rr, int p, int q, int r, int s,
-  int cc) const{
+int TAManyBodySDList::Integral(int rr, int p, int q, int s, int r, int cc) const{
   TABit rBit = (*this)[rr]->Bit();
   TABit cBit = (*this)[cc]->Bit();
   rBit.Annhilate(p).Annhilate(q);
-  cBit.Annhilate(s).Annhilate(r);
+  cBit.Annhilate(r).Annhilate(s);
   return rBit*cBit;
 } // end of member function Integral(rr,p,q,r,s,cc);
 /// \retval <rr|a+_p*a+_q*a+_r * a_s*a_t*a_u|cc>
-int TAManyBodySDList::Integral(int rr, int p, int q, int r, int s, int t,
-  int u, int cc) const{
+int TAManyBodySDList::Integral(int rr, int p, int q, int r, int u, int t,
+    int s, int cc) const{
   TABit rBit = (*this)[rr]->Bit();
   TABit cBit = (*this)[cc]->Bit();
   rBit.Annhilate(p).Annhilate(q).Annhilate(r);
-  cBit.Annhilate(u).Annhilate(t).Annhilate(s);
+  cBit.Annhilate(s).Annhilate(t).Annhilate(u);
   return rBit*cBit;
 } // end of member function Integral(rr,p,q,r,s,t,u,cc);

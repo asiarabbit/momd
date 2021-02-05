@@ -10,13 +10,13 @@
 
 #include <cmath>
 #include <vector>
+#include <iostream>
 #include <algorithm>
 #include <catch2/catch.hpp>
 #include "TADiagonalize.h"
 #include "TAException.h"
 #include "TAMatrix.h"
 #include "TAMath.h"
-#include <iostream>
 
 using std::vector;
 using std::max;

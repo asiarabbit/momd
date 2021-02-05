@@ -87,7 +87,6 @@ public:
     return false;
   }
 
-
   /// \retval calculate combination number
   /// returns the value ln[Gamma(xx)] for xx > 0.
   static double gammaln(double xx);

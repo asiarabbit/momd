@@ -59,7 +59,7 @@ public:
   /// e[0..n-1] inputs the subdiagonal elements of the tridiagonal matrix, with e[0] arbitray.
   /// On output e is destroyed. When finding only the eigenvalues, several lines may be omitted,
   /// as noted in the comments. If the eigenvectors of a tridiagonal matrix are desired,
-  /// the matrix z[0..n-1][0..n-1] is input a sthe identity matrix. if the eigenvectors of
+  /// the matrix z[0..n-1][0..n-1] is input as the identity matrix. if the eigenvectors of
   /// a matrix that has been reduced by Tridiagonalize are required, then z is input as
   /// the matrix output by Tridiagonalize. In either case, the kth column of z returns the
   /// normalized eigenvector corresponding to d[k].

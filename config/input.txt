@@ -1,0 +1,12 @@
+# input for fci routine #
+# Created: Feb 4, 2021 by Yazhou Sun, asia.rabbit@163.com
+# Last modified by Yazhou Sun, Feb 4, 2021
+#
+
+
+# configuration file for single particle state space
+../config/paringSP.txt
+# number of particles in the many-body system
+3
+# the fixed 2*M for M-scheme in many-body basis
+1
