@@ -80,7 +80,7 @@ void TASingleParticleStateManager::LoadSPListFile(const string &file){
 	} // end while
 	ff.close();
 
-	TAException::Info("TASingleParticleStateManager",
-		"LoadSPListFile: \nDisplay the SP States read in ~");
-	for(TASingleParticleState *sp : fSPStateVec) sp->Print(); // DEBUG
+	// TAException::Info("TASingleParticleStateManager",
+	// 	"LoadSPListFile: \nDisplay the SP States read in ~");
+	// for(TASingleParticleState *sp : fSPStateVec) sp->Print(); // DEBUG
 } // end of member function LoadSPListFile()

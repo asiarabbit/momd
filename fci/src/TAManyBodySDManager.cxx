@@ -1,7 +1,7 @@
 /**
   \file TAManyBodySDManager.C
   \class TAManyBodySDManager
-  \brief A class to generate many-body basis and manage TAManagerSDList objects.
+  \brief A class to generate many-body basis and manage TAManyBOdySDList objects.
   \author SUN Yazhou
   \date Created: 2020/02/01
   \date Last modified: 2020/02/02 by SUN Yazhou
@@ -70,12 +70,12 @@ void TAManyBodySDManager::LoadConfigFile(const string &file){
     ss << line; ss << ' ';
 	} // end while
   ss >> fSPStatefile; ss >> fNParticle; ss >> f2M;
-  TAManyBodySD::kNParticle = fNParticle;
 
 	inFile.close();
-  cout << "Single particle state input file: " << fSPStatefile << endl;
+  cout << "Single particle state input file: " << endl;
+  cout << fSPStatefile << endl;
   cout << "Number of particles: " << fNParticle << endl;
-  cout << "2M for M-scheme: " << f2M << endl;
+  cout << "2M for M-scheme: " << f2M << endl << endl;
 } // end of member function LoadConfigFile
 
 
@@ -123,7 +123,7 @@ void TAManyBodySDManager::GenerateManyBodySD(){
       SPStateVec[i + 1] = SPStateVec[i] + 1; i++;
     }
     fManyBodySDVec.push_back(new TAManyBodySD(index++, fNParticle, SPStateVec));
-    if(SPStateVec[0] == fNSPState - fNParticle) break;
+    if(fNSPState - fNParticle == SPStateVec[0]) break;
   } // end while
   delete [] SPStateVec;
   ////////////////// END of the odometer algorithm /////////////////////
@@ -137,13 +137,12 @@ void TAManyBodySDManager::GenerateManyBodySD(){
   }
 
   // display the geneated many-body SD for debugging purposes
-  TAException::Info("TAManyBodySDManager",
-    "GenerateManyBodySD: \n\
-Display the generated many-body Slater determinants ~");
-  for(TAManyBodySD *mp : fManyBodySDVec) mp->Print(); // DEBUG
-  for(TAManyBodySD *mp : fManyBodySDVec) mp->PrintInBit(); // DEBUG
-  cout << "Totally there're " << fManyBodySDVec.size();
-  cout << " many-body Slater determinants in the list" << endl;
+  // TAException::Info("TAManyBodySDManager",
+  //   "GenerateManyBodySD: Display the generated many-body Slater determinants ~");
+  // for(TAManyBodySD *mp : fManyBodySDVec) mp->Print(); // DEBUG
+  // for(TAManyBodySD *mp : fManyBodySDVec) mp->PrintInBit(); // DEBUG
+  // cout << "Totally there're " << fManyBodySDVec.size();
+  // cout << " many-body Slater determinants in the list" << endl;
 } // end member function GenerateManyBodySD
 
 // generate the M-scheme many-body state basis
@@ -176,8 +175,8 @@ void TAManyBodySDManager::MSchemeGo(){
     TAException::Warn("TAManyBodySDManager",
       "MSchemeGo: fManyBodySDListM is empty in the end.");
   }
-  fManyBodySDListM->Print(); // DEBUG
-  fManyBodySDListM->PrintInBit(); // DEBUG
+  // fManyBodySDListM->Print(); // DEBUG
+  // fManyBodySDListM->PrintInBit(); // DEBUG
 } // end of member function MSchemeGo
 
 TAManyBodySDList *TAManyBodySDManager::GetMBSDListM(){

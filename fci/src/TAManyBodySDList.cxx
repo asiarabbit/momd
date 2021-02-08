@@ -6,12 +6,13 @@
 	member of this list.
 	\author SUN Yazhou
 	\date Created: 2020/01/31
-	\date Last modified: 2020/02/11 by SUN Yazhou
+	\date Last modified: 2021/02/06 by SUN Yazhou
 	\copyright 2020 SUN Yazhou
 	\copyright SUNNY project, Anyang Normal University, IMP-CAS
 */
 
 #include <iostream>
+#include <algorithm>
 #include "TAManyBodySDList.h"
 #include "TAManyBodySD.h"
 #include "TAException.h"
@@ -19,6 +20,7 @@
 
 using std::cout;
 using std::endl;
+using std::remove_if;
 
 TAManyBodySDList::TAManyBodySDList(short twoM) : f2M(twoM){
 }
@@ -30,6 +32,12 @@ void TAManyBodySDList::Add(TAManyBodySD *mbsd){
   fManyBodySDVec.push_back(mbsd);
   //mbsd->SetIndex(fManyBodySDVec.size() - 1);
 }
+
+/// remove those with broken pairs, i.e. >2 single particles
+void TAManyBodySDList::Pairing(){
+  auto &p = fManyBodySDVec;
+  p.erase(remove_if(p.begin(), p.end(), [](TAManyBodySD *l){ return !(l->IsPaired()); }), p.end());
+} // end member function Pairing
 
 void TAManyBodySDList::Print() const{
   cout << "Print many-body basis set for M-scheme where 2M = ";
@@ -61,25 +69,38 @@ TAManyBodySD *TAManyBodySDList::operator[](int i) const{
 /// \retval <rr|a+_p * a_q|cc>
 int TAManyBodySDList::Integral(int rr, int p, int q, int cc) const{
   TABit rBit = (*this)[rr]->Bit();
+  rBit.Annhilate(p); if(!rBit.GetPhase()) return 0.;
+
   TABit cBit = (*this)[cc]->Bit();
-  rBit.Annhilate(p);
-  cBit.Annhilate(q);
+  cBit.Annhilate(q); if(!cBit.GetPhase()) return 0.;
+
   return rBit*cBit;
 } // end of member function Integral(rr,p,q,cc);
-/// \retval <rr|a+_p*a+_q * a_r*a_s|cc>
+
+/// \retval <rr|a+_p*a+_q * a_s*a_r|cc>
 int TAManyBodySDList::Integral(int rr, int p, int q, int s, int r, int cc) const{
   TABit rBit = (*this)[rr]->Bit();
+  rBit.Annhilate(p); if(!rBit.GetPhase()) return 0.;
+  rBit.Annhilate(q); if(!rBit.GetPhase()) return 0.;
+
   TABit cBit = (*this)[cc]->Bit();
-  rBit.Annhilate(p).Annhilate(q);
-  cBit.Annhilate(r).Annhilate(s);
+  cBit.Annhilate(r); if(!cBit.GetPhase()) return 0.;
+  cBit.Annhilate(s); if(!cBit.GetPhase()) return 0.;
+
   return rBit*cBit;
 } // end of member function Integral(rr,p,q,r,s,cc);
-/// \retval <rr|a+_p*a+_q*a+_r * a_s*a_t*a_u|cc>
+/// \retval <rr|a+_p*a+_q*a+_r * a_u*a_t*a_s|cc>
 int TAManyBodySDList::Integral(int rr, int p, int q, int r, int u, int t,
     int s, int cc) const{
   TABit rBit = (*this)[rr]->Bit();
+  rBit.Annhilate(p); if(!rBit.GetPhase()) return 0.;
+  rBit.Annhilate(q); if(!rBit.GetPhase()) return 0.;
+  rBit.Annhilate(r); if(!rBit.GetPhase()) return 0.;
+
   TABit cBit = (*this)[cc]->Bit();
-  rBit.Annhilate(p).Annhilate(q).Annhilate(r);
-  cBit.Annhilate(s).Annhilate(t).Annhilate(u);
+  cBit.Annhilate(s); if(!cBit.GetPhase()) return 0.;
+  cBit.Annhilate(t); if(!cBit.GetPhase()) return 0.;
+  cBit.Annhilate(u); if(!cBit.GetPhase()) return 0.;
+
   return rBit*cBit;
 } // end of member function Integral(rr,p,q,r,s,t,u,cc);

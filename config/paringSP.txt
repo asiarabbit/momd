@@ -1,12 +1,16 @@
 # Single particle input file for Full Configuration Interaction method
 # in tackling many-body problems.
 # - The paring model
+# note that "pair states" should be placed next to each other.
+# ** The index is (2k-1, 2k) (k>0). **
 # The file format is as follows:
 #
-# index   k     l    2j    2mj    energy
-    1     1     0    1     -1       0
-    2    -1     0    1      1       1
-    3     2     1    1     -1       2
-    4    -2     1    1      1       3
-    5     3     1    1     -1       4
-    6    -3     1    1      1       5
+# index   n     l    2j    2mj    energy
+    1     0     0    1     -1       0
+    2     0     0    1      1       1
+    3     1     1    1     -1       2
+    4     1     1    1      1       3
+    5     2     1    1     -1       4
+    6     2     1    1      1       5
+    7     3     1    1     -1       6
+    8     3     1    1      1       7

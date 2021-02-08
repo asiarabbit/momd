@@ -201,7 +201,7 @@ void TADiagonalize::Tridiagonalize(matrix &a, int n, double *d, double *e){
 /// e[0..n-1] inputs the subdiagonal elements of the tridiagonal matrix, with e[0] arbitray.
 /// On output e is destroyed. When finding only the eigenvalues, several lines may be omitted,
 /// as noted in the comments. If the eigenvectors of a tridiagonal matrix are desired,
-/// the matrix z[0..n-1][0..n-1] is input a sthe identity matrix. if the eigenvectors of
+/// the matrix z[0..n-1][0..n-1] is input as the identity matrix. If the eigenvectors of
 /// a matrix that has been reduced by Tridiagonalize are required, then z is input as
 /// the matrix output by Tridiagonalize. In either case, the kth column of z returns the
 /// normalized eigenvector corresponding to d[k].
@@ -274,11 +274,12 @@ void TADiagonalize::TridiagQLImplicit(double *d, double *e, int n, matrix &z){
 /// Optionally user can provide the initial vector x, or it defaults to {1,1,..,1}
 /// d should be of length n, for it is drafted in the program
 inline double vprod(const matrix &q, const matrix &r, int n){ // vector inner product
-  double p = 0.; for(int i = n; i--;) p += q[i][0]*r[i][0]; // alpha =q*r
+  double p = 0.;
+  for(int i = n; i--;) if(q[i][0] && r[i][0]) p += q[i][0]*r[i][0];
   return p;
 }
 void TADiagonalize::Lanczos(const matrix &a, int n, double *d, matrix &z, double *x){
-  static const double EPS = 1.e-5; // eigenvalue accuracy standard
+  static const double EPS = 1.e-6; // eigenvalue accuracy standard
   static const int NMAX = 50; // maximum number of iterations
   const int nm = min(n, NMAX), np = nm + 1;
   double e[np]; vector<double> alpha, beta;
@@ -307,8 +308,7 @@ void TADiagonalize::Lanczos(const matrix &a, int n, double *d, matrix &z, double
     const int jj = j+1;
     for(int i = jj; i--;) d[i] = alpha[i]; // diagonal of Tk
     for(int i = j;  i--;) e[i+1] = beta[i]; // e[0] is not used
-    matrix s(jj,jj); // to store the eigenpairs of Tk
-    s = 1.; // to store the eigenvector matrix of Tk
+    matrix s(jj,jj); s = 1.; // to store the eigenvector matrix of Tk
     TridiagQLImplicit(d,e,jj,s); // diagonalize Tk
     double epsilon = 0.; // check convergence
     for(int i = jj; i--;) epsilon = max(epsilon, fabs(beta[j]*s[j][i]));
@@ -321,18 +321,17 @@ void TADiagonalize::Lanczos(const matrix &a, int n, double *d, matrix &z, double
   TAException::Info("TADiagonalize", "Lanczos: Too many iterations occurred.");
 } // end of member function Lanczos
 
-/// Lanczos method featuring Ritz-pairs purging. Unwanted Ritz-pairs are deflated,
-/// leaving a smaller Krylov space, where the Lanczos orthogonalization resumes
-/// so that the unwanted Ritz-pairs are purged from the final constructed Krylov
-/// space. This would speed the convergence to the wanted Ritz-pairs compared with
-/// plain Lanczos algorithm. NOTE that we assume the largest eigenvalues are wanted
+/// Lanczos method featuring Ritz-pairs purging. After getting a set of Ritz vectors
+/// from a plain Lanczos, we keep a smaller set and remove (purge) the rest. Then
+/// develop Krylov space from the new Lanczos basis. So unwanted directions are removed
+/// from the initial vector for each iteration. NOTE that the largest eigenvalues are kept.
 /// Ref.: http://people.inf.ethz.ch/arbenz/ewp/Lnotes/lsevp.pdf, p212
 /// Ref.: K. Wu and H. D. Simon,SIAM J. Matrix Anal. Appl., 22 (2000), pp. 602–616.
 void TADiagonalize::LanczosPurge(const matrix &a, int n, double *d, matrix &z, double *x){
   static const double EPS = 1.e-8; // eigenvalue accuracy standard
   static const int NMAXRST = 100; // maximum restart times
   // number of wanted eigenpairs and dimension for the plain Lanczos
-  static const int J = 3, K = J + 3; // J: number of the wanted eigenpairs
+  static const int J = 4, K = J + 3; // J, K: number of the wanted eigenpairs and candidates
   if(n <= 7) return Lanczos(a,n,d,z,x); // we deal with a little bit larger matrix
   const int NMAX = 100; // maximum number of iterations
   const int nm = min(n, NMAX);
@@ -347,29 +346,29 @@ void TADiagonalize::LanczosPurge(const matrix &a, int n, double *d, matrix &z, d
   q.cv(0).normalize(); // normalize the trial vector
   matrix Q(q); // to store Lanczos basis
   a.DotProduct(q,r); // r = a*q
-  alpha.push_back(vprod(q,r,n));
+  alpha.push_back(vprod(q,r,n)); // alpha = <qj|a|qj>
   r.SelfAdd(-alpha[0], q); // r = A*q-alphaj*qj
   beta.push_back(r.cv(0).norm()); // the first off-diagonal of Tk
-  // the trial vector is an eigenvector
-  if(fabs(beta[0])+1. == 1.){ d[0] = alpha[0]; return; }
+  // FIXME: if the trial vector is an eigenvector, return
+  if(fabs(beta[0])+alpha[0] == alpha[0]){ d[0] = alpha[0]; return; }
   // commence the iteration //
-  for(int j = 1; j <= nm; j++){
+  for(int j = 1; j <= nm; j++){ // j: n of Lanczos vectors, so it'd be always far from nm
     v = q; // q_{j-1}
-    r.Scale(1./beta[j-1], q); // normalize qj in q
+    r.Scale(1./beta[j-1], q); // normalize r in q
     a.DotProduct(q, r); // r = a*qj
     r.SelfAdd(-beta[j-1], v); // r -= beta_{j-1}*q_{j-1};
     alpha.push_back(vprod(q,r,n)); // alpha=<qj|a|qj>
     r.SelfAdd(-alpha[j], q); // r -= alphaj*qj;
     const int jj = j+1;
-    // restoring d, e & s is nontrivial, for they are changed per iteration
+    // restoring d, e and s is nontrivial, for they are changed per iteration
     for(int i = jj; i--;) d[i] = alpha[i]; // diagonal of Tk
     for(int i = j; i--;) e[i+1] = beta[i]; // e[0] is not used
     if(restarted){ // just restarted
-      TridiagArrow(d,e,j,st); // tridiagonalize the mutant Tk
+      TridiagArrow(d,e,j,st); // tridiagonalize the mutant Tk to extract the Lanczos basis
       for(int i = j; i--;) alpha[i] = d[i]; // Tk recovered to tridiagonal, j=J+1
       for(int i = J; i--;) beta[i] = e[i+1];
-      Q.DotProduct(st, z); // store bases of deflated Krylov space temporarily in z
-      for(int i = J; i--;) Q.cv(i) = z.cv(i); // accept the new Lanczos bases
+      Q.DotProduct(st, z); // store the basis of deflated Krylov space temporarily in z
+      for(int i = J; i--;) Q.cv(i) = z.cv(i); // accept the new Lanczos basis
       restarted = false; // restart has been dealt with
     } // end if, we can pretend now that no restart whatsoever has ever happended
     Q.PushBackColumn(q.cv(0)); // confirm new Lanczos basis qj
@@ -392,23 +391,23 @@ void TADiagonalize::LanczosPurge(const matrix &a, int n, double *d, matrix &z, d
       // getchar(); // DEBUG
       // deflate j+1~K Ritz-pairs, and update the tridiagonal matrix //
       alpha.erase(alpha.begin()+J, alpha.end());
-      beta.erase(beta.begin()+J, beta.end()-1);
-      Q.DotProduct(s, z); // z=Q*s: calculate the Ritz vector
-      Q.EraseColumn(J, Q.nc());
+      beta.erase(beta.begin()+J, beta.end()-1); // beta_{k} reserved for future use
+      Q.DotProduct(s, z); // z=Q*s: calculate all the Ritz vectors
+      Q.EraseColumn(J, Q.nc()); // remove the unwanted Ritz vectors
       for(int i = J; i--;) Q.cv(i) = z.cv(i); // change qi for zi in Q
       r.Scale(1./beta[J], q); // compute q_{K+1} = r/|r|
       Q.PushBackColumn(q.cv(0)); // add q_{K+1} to Q
       a.DotProduct(q, r); // r = a*q_{K+1}
       for(int i = 0; i < J; i++){
-        alpha[i] = d[i];
+        alpha[i] = d[i]; // the diagonal of Tk(0:J-1, 0:J-1)
         beta[i] = beta[J]*s[j][i]; // sigma_i: <zi|a|q_{K+1}>
         for(int k = n; k--;) r[k][0] -= beta[i]*z[k][i]; // remove zi bits from r
       } // end for over i
       alpha.push_back(vprod(r,q,n)); // alpha = <q_{K+1}|a|q_{K+1}>
       r.SelfAdd(-alpha[J], q); // remove q_{K+1} component, q_{K+2} constructed
-      beta[J] = r.cv(0).norm(); // r is clean now, beta_{k+1}=|r|=|q+{k+2}|
+      beta[J] = r.cv(0).norm(); // r is clean now, beta_{K+1}=|r_{K+1}|
       j -= K-J; // one more thing, squeeze the loop for the purge
-      j++; // j++: restart itself steps a Lanczos iteration
+      j++; // j++: restarting itself moves a step forward in the Lanczos iteration
       restarted = true; restartCnt++;
     } // end if(j == K)
   } // end for over j
@@ -455,6 +454,7 @@ TEST_CASE("Lanczos Test", "[lancz]"){
     double d[n] = {0,1,2,3,4,100000}, x[n] = {1,1,1,1,1,1}; // (z,d) are the eigenpair
     a.diag(d);
     TADiagonalize::Lanczos(a,n,d,z,x);
+    // matrix(n,1,d).Print(); a.Print(); z.Print(); // DEBUG
     CHECK(d[0] == Approx(100000.).epsilon(1.e-10));
     CHECK(d[1] == Approx(4.).epsilon(1.e-10));
     CHECK(d[2] == Approx(3.).epsilon(1.e-10));

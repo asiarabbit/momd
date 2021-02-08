@@ -24,9 +24,7 @@ class TASingleParticleStateManager{
 public:
 	virtual ~TASingleParticleStateManager();
 	static TASingleParticleStateManager *Instance();
-	vector<TASingleParticleState *> &GetSPStateVec(){
-		return fSPStateVec;
-	}
+	vector<TASingleParticleState *> &GetSPStateVec(){ return fSPStateVec; }
 	int GetNSPState() const;
 	/// \param file: the input file is of format as follows:
 	/// index n l 2j 2mj energy

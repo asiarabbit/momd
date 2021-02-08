@@ -29,10 +29,11 @@ public:
 	short Get2M() const{ return f2M; }
 	vector<TAManyBodySD *> &GetManyBodySDVec(){ return fManyBodySDVec; }
 	void Add(TAManyBodySD *mbsd);
+	void Pairing(); /// remove those with broken pairs, i.e. >2 single particles
 	void Print() const;
 	void PrintInBit() const; ///< Print all the mbsd-s in bit mode
 	int GetNBasis() const{ return fManyBodySDVec.size(); }
-	TAManyBodySD *operator[](int i) const; ///< return fManyBodySDVec[i]
+	TAManyBodySD *operator[](int i) const; ///< \retval fManyBodySDVec[i]
 
 	/// \retval <rr|a+_p * a_q|cc>, 1N force
 	int Integral(int rr, int p, int q, int cc) const;

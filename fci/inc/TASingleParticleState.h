@@ -19,8 +19,9 @@ public:
 	TASingleParticleState(int index, short n, short l,
 		short _2j, short _2mj, double energy);
 	virtual ~TASingleParticleState();
-	short Get2Mj(){ return f2mj; } /// \return 2*mj
-	double GetEnergy(){ return fEnergy; }
+	short Get2Mj() const{ return f2mj; } /// \return 2*mj
+	short GetN() const{ return fn; } // \retval the number of nodes
+	double GetEnergy() const{ return fEnergy; }
 	void Print() const; ///< print the single particle state
 
 protected:

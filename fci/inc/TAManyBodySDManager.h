@@ -1,7 +1,7 @@
 /**
   \file TAManyBodySDManager.h
   \class TAManyBodySDManager
-  \brief A class to generate many-body basis and manage TAManagerSDList objects.
+  \brief A class to generate many-body basis and manage TAManyBodySDList objects.
   \author SUN Yazhou
   \date Created: 2020/02/01
   \date Last modified: 2020/02/10 by SUN Yazhou

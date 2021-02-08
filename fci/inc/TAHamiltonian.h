@@ -31,6 +31,9 @@ public:
   /// \retval calculate and return the matrix form of the hamiltonian
   virtual matrix *Matrix();
   virtual vec_t<double> &operator[](int i){ return (*Matrix())[i]; }
+  int GetNMBSD() const;
+  void PrintMBSD() const; ///< as the name indicates
+
   /// assign the matrix element (*fMatrix)[i][j]
   virtual void MatrixElement(int row, int column);
   /// the following are supposed to be user-specific, i.e. the definitions of the
@@ -45,7 +48,6 @@ protected:
   matrix *fMatrix; ///< the hamiltonian matrix in fMBSDListM basis
   int fNSPState; ///< number of single particle states
   int fNParticle; ///< number of particles
-  int fNMBSD; ///< number of many-body Slater determinants in fMBSDListM
 };
 
 #endif

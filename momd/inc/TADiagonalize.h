@@ -35,7 +35,7 @@ public:
   }
   static void JacobiSort(matrix &a, int n, double *d){
     matrix v(n,n);
-    Jacobi(a,n,d,v); EigenSort(d,v,n);
+    JacobiSort(a,n,d,v);
     a = v;
   }
 

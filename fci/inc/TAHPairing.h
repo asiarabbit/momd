@@ -29,7 +29,8 @@ public:
   virtual double MatrixElement3N(int rr, int cc) override;
 
 protected:
-  double fG; // the interaction strength constant
+  /// H=\sum_n{delta*n*N_n} - GP_+P_-
+  double fG, fDelta; ///< the interaction strength constant
 };
 
 #endif

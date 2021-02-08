@@ -24,19 +24,24 @@ public:
 	TAManyBodySD(int index, int nParticle, int *SPState);
 	virtual ~TAManyBodySD();
 	short Get2M() const{ return f2M; } ///< \retval the total jz*2
-	TASingleParticleState *operator[](int i);
-	void SetIndex(int index){ fIndex = index; }
+	const TABit &Bit() const{ return fBit; }
 	void Print() const; ///< self-display
 	void PrintInBit() const; ///< Print the many-body state in bit mode
-	const TABit &Bit() const{ return fBit; }
+	/// note that this method works only if piared states are next to each other,
+	/// and SPStates are ordered in ManyBodySD
+	bool IsPaired() const; ///< \retval if there're broken pairs or not
+
+	TASingleParticleState *operator[](int i);
+	void SetIndex(int index){ fIndex = index; }
 	void UpdateSPStateArr(); ///< update fSPStateArr to fBit
 	void UpdateBit(); ///< update fBit to fSPStateArr
 	int *IntArr() const; ///< \retval fSPStateArr, update with fBit if necessary
-	static int GetNParticle();
+	int GetNParticle() const;
+
 	friend class TAManyBodySDManager;
 
 protected:
-	static int kNParticle;
+	int fNParticle;
 	int fIndex; ///< index of the object
 	short f2M; ///< the total jz*2
 	double fEnergy; ///< the total energy of the SD
