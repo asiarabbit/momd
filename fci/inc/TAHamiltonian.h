@@ -18,6 +18,7 @@
 
 #include <string>
 #include "TAMatrix.h"
+#include "TASparseVec.h"
 
 using std::string;
 class TAManyBodySDList;
@@ -29,23 +30,20 @@ public:
   TAHamiltonian(const string &configFile);
   virtual ~TAHamiltonian();
   /// \retval calculate and return the matrix form of the hamiltonian
-  virtual matrix *Matrix();
-  virtual vec_t<double> &operator[](int i){ return (*Matrix())[i]; }
-  int GetNMBSD() const;
-  void PrintMBSD() const; ///< as the name indicates
+  unsigned long GetNBasis() const;
 
   /// assign the matrix element (*fMatrix)[i][j]
-  virtual void MatrixElement(int row, int column);
+  virtual double MatrixElement(int row, int column);
   /// the following are supposed to be user-specific, i.e. the definitions of the
   /// following methods are Hamiltonian-dependent, and must defined by users.
   virtual double MatrixElement1N(int rr, int cc) = 0;
   virtual double MatrixElement2N(int rr, int cc) = 0;
   virtual double MatrixElement3N(int rr, int cc) = 0;
+  void DotProduct(TASparseVec &v, TASparseVec &r); /// r=H.v
 
 protected:
   /// M-scheme many-body SD list, to define the representation
   TAManyBodySDList *fMBSDListM; ///< \NOTE its memory doesn't need to be freed
-  matrix *fMatrix; ///< the hamiltonian matrix in fMBSDListM basis
   int fNSPState; ///< number of single particle states
   int fNParticle; ///< number of particles
 };

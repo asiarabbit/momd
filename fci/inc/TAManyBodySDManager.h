@@ -37,7 +37,6 @@ protected:
   TAManyBodySDManager();
 
   static TAManyBodySDManager *kInstance;
-  vector<TAManyBodySD *> fManyBodySDVec; ///< the total MBSDs
   TAManyBodySDList *fManyBodySDListM; ///< M-scheme many-body basis
   int fNParticle, fNSPState, f2M;
   string fSPStatefile;

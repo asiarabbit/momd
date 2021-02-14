@@ -17,13 +17,13 @@
 #include "TAHamiltonian.h"
 #include "TAManyBodySDList.h"
 #include "TAManyBodySDManager.h"
-#include "TASingleParticleState.h"
-#include "TASingleParticleStateManager.h"
+#include "TASPState.h"
+#include "TASPStateManager.h"
 
 static const double DUMB = -9999.;
 
 TAHamiltonian::TAHamiltonian(const string &configFile)
-    : fMBSDListM(0), fMatrix(0), fNSPState(0){
+    : fMBSDListM(0), fNSPState(0){
   // prepare the single-particle basis set //
   // prepare the basis of the representation //
   TAManyBodySDManager *mbsdManager = TAManyBodySDManager::Instance();
@@ -34,54 +34,26 @@ TAHamiltonian::TAHamiltonian(const string &configFile)
   fNParticle = mbsdManager->GetNParticle();
 } // end of the constructor
 
-TAHamiltonian::~TAHamiltonian(){
-  if(fMatrix){ delete fMatrix; fMatrix = nullptr; }
-} // end of the destructor
+TAHamiltonian::~TAHamiltonian(){} // end of the destructor
 
-/// \retval calculate and return the matrix form of the hamiltonian
-matrix* TAHamiltonian::Matrix(){
-  if(fMatrix && !fMatrix->IsEmpty()){
-    return fMatrix;
-  }
-  if(!fMBSDListM)
-    TAException::Error("TAHamiltonian",
-      "Matrix: The many-body basis not assigned.");
-  if(!fNSPState)
-    TAException::Error("TAHamiltonian", "Matrix: fNSPState not assigned.");
-  int nmbsd = GetNMBSD();
-  if(!nmbsd)
-    TAException::Error("TAHamiltonian", "Matrix: ManyBodySD number is 0.");
-
-  // loop to generate each matrix element for the hamiltonian //
-  if(fMatrix){ delete fMatrix; fMatrix = nullptr; }
-  fMatrix = new matrix(nmbsd, nmbsd); // allot memery to a nxn matrix
-  // initialize to a specific initial value //
-  for(int i = nmbsd; i--;) for(int j = nmbsd; j--;) (*fMatrix)[i][j] = DUMB;
-
-  // H is symmetric - alculate the lower triangle, and then copy back //
-  for(int rr = 0; rr < nmbsd; rr++) for(int cc = 0; cc <= rr; cc++){
-    MatrixElement(rr, cc); // assign matrix element H[i][j]
-    (*fMatrix)[cc][rr] = (*fMatrix)[rr][cc];
-  } // end for
-
-  return fMatrix;
-} // end of the member function Matrix
-
-int TAHamiltonian::GetNMBSD() const{
+unsigned long TAHamiltonian::GetNBasis() const{
   return fMBSDListM->GetNBasis();
-} // end of member function GetNMBSD
+} // end of member function GetNBasis
 
-void TAHamiltonian::PrintMBSD() const{
-  fMBSDListM->Print();
-  fMBSDListM->PrintInBit();
-} // end of member function PrintMBSD
-
-/// assign the matrix element (*fMatrix)[i][j]
-/// \param r: row, c: column
-void TAHamiltonian::MatrixElement(int rr, int cc){
-  // so that the matrix is symmetric //
-  if((*fMatrix)[rr][cc] != DUMB)
-    TAException::Warn("TAHamiltonian", "H element (%d, %d) assgiend already assigned.", rr, cc);
-  (*fMatrix)[rr][cc] = MatrixElement1N(rr, cc) + MatrixElement2N(rr, cc) +
-     MatrixElement3N(rr, cc);
+/// calculate H(rr,cc) \param r: row, c: column
+double TAHamiltonian::MatrixElement(int rr, int cc){
+  return MatrixElement1N(rr, cc) + MatrixElement2N(rr, cc) +
+    MatrixElement3N(rr, cc);
 } // end of member function MatrixElement
+
+void TAHamiltonian::DotProduct(TASparseVec &v, TASparseVec &r){
+  const int n = GetNBasis();
+  r.Clear(); // release the
+  double t, e1, e2;
+  for(int i = 0; i < n; i++){
+    t = 0.;
+    for(int j = 0; j < n; j++)
+      if(!(e1 = MatrixElement(i,j)) && (!(e2 = v[j]))) t += e1 * e2;
+    r.Fill(i,t);
+  } // end for over i
+} // end member function DotProduct

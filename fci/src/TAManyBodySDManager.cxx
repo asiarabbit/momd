@@ -1,5 +1,5 @@
 /**
-  \file TAManyBodySDManager.C
+  \file TAManyBodySDManager.cxx
   \class TAManyBodySDManager
   \brief A class to generate many-body basis and manage TAManyBOdySDList objects.
   \author SUN Yazhou
@@ -16,9 +16,8 @@
 #include "TAManyBodySDManager.h"
 #include "TAManyBodySDList.h"
 #include "TAManyBodySD.h"
-#include "TASingleParticleStateManager.h"
+#include "TASPStateManager.h"
 #include "TAException.h"
-#include "TAMath.h"
 
 using std::cout;
 using std::cin;
@@ -27,8 +26,8 @@ using std::endl;
 TAManyBodySDManager *TAManyBodySDManager::kInstance = nullptr;
 
 TAManyBodySDManager::TAManyBodySDManager() : fManyBodySDListM(nullptr),
-      fNParticle(0), fNSPState(0), f2M(-9999){
-    fSPStatefile = "";
+    fNParticle(0), fNSPState(0), f2M(-9999){
+  fSPStatefile = "";
 } // end of the constructor
 
 TAManyBodySDManager *TAManyBodySDManager::Instance(){
@@ -36,14 +35,7 @@ TAManyBodySDManager *TAManyBodySDManager::Instance(){
   return kInstance;
 }
 
-TAManyBodySDManager::~TAManyBodySDManager(){
-  for(TAManyBodySD *&p : fManyBodySDVec){
-    if(p){
-      delete p; p = nullptr;
-    } // end if
-  } // end for
-  fManyBodySDVec.clear();
-} // end of the destructor
+TAManyBodySDManager::~TAManyBodySDManager(){}
 
 // skip spaces and tabs, return subscript of the valid char
 inline int skipCrap(const char *s){
@@ -80,32 +72,24 @@ void TAManyBodySDManager::LoadConfigFile(const string &file){
 
 
 void TAManyBodySDManager::GenerateManyBodySD(){
-  if(fManyBodySDVec.size()) return; // called already
+  if(fManyBodySDListM->GetNBasis()) return; // called already
 
   // generate SP state, MB state, and M-scheme MB state list //
   if("" == fSPStatefile) TAException::Error("TAManyBodySDManager",
     "GenerateManyBodySD: Single-particle state space inputfile not assigned yet.");
-  TASingleParticleStateManager *spStateManager
-    = TASingleParticleStateManager::Instance();
+  TASPStateManager *spStateManager = TASPStateManager::Instance();
   spStateManager->LoadSPListFile(fSPStatefile);
   fNSPState = spStateManager->GetNSPState();
-  if(fNParticle > fNSPState){
-    TAException::Error("TAManyBodySDManager",
-      "GenerateManyBodySD: The number of particles are larger than\
- the number of single particle states.");
-  }
-  const int nManyBodySD = TAMath::Binomial(fNSPState, fNParticle);
-  fManyBodySDVec.clear(); fManyBodySDVec.reserve(nManyBodySD);
-
+  if(fNParticle > fNSPState) TAException::Error("TAManyBodySDManager",
+    "GenerateManyBodySD: nParticle > nSPState.");
 
   /////////// odometer method to generate many-body basis /////////////
   if(0 == fNParticle) TAException::Error("TAManyBodySDManager",
     "GenerateManyBodySD: Number of particles not assigned.");
   int *SPStateVec = new int[fNParticle];
-  int index = 0; // many-body SD index
   // the first MBSD configuration
   for(int i = 0; i < fNParticle; i++) SPStateVec[i] = i;
-  fManyBodySDVec.push_back(new TAManyBodySD(index++, fNParticle, SPStateVec));
+  fManyBodySDListM->Add(SPStateVec, fNParticle); ///< Fill mbsd in a TTree obj
 
   // generate the many-body slater determinants //
   // fNParticle sp-states are stored in each int of array SPStateVec. The sp-states are
@@ -122,64 +106,41 @@ void TAManyBodySDManager::GenerateManyBodySD(){
     while(i < fNParticle - 1){
       SPStateVec[i + 1] = SPStateVec[i] + 1; i++;
     }
-    fManyBodySDVec.push_back(new TAManyBodySD(index++, fNParticle, SPStateVec));
+    fManyBodySDListM->Add(SPStateVec, fNParticle); ///< Fill mbsd in a TTree obj
     if(fNSPState - fNParticle == SPStateVec[0]) break;
   } // end while
   delete [] SPStateVec;
   ////////////////// END of the odometer algorithm /////////////////////
 
-  if(!fManyBodySDVec.size())
-    TAException::Error("TAManyBodySDManager",
+  unsigned long nb = fManyBodySDListM->GetNBasis();
+  if(!nb) TAException::Error("TAManyBodySDManager",
       "GenerateManyBodySD: After called, still no ManyBodySD is generated.");
-  if(int(fManyBodySDVec.size()) != TAMath::Binomial(fNSPState, fNParticle)){
-    TAException::Error("TAManyBodySDManager",
-      "GenerateManyBodySD: After called, number of ManyBodySD is not right.");
-  }
 
   // display the geneated many-body SD for debugging purposes
-  // TAException::Info("TAManyBodySDManager",
-  //   "GenerateManyBodySD: Display the generated many-body Slater determinants ~");
-  // for(TAManyBodySD *mp : fManyBodySDVec) mp->Print(); // DEBUG
-  // for(TAManyBodySD *mp : fManyBodySDVec) mp->PrintInBit(); // DEBUG
-  // cout << "Totally there're " << fManyBodySDVec.size();
-  // cout << " many-body Slater determinants in the list" << endl;
+  TAException::Info("TAManyBodySDManager",
+    "GenerateManyBodySD: Display the generated many-body Slater determinants ~");
+  cout << "Totally there're " << fManyBodySDListM->GetNBasis(); // DEBUG
+  cout << " many-body Slater determinants in the list" << endl; // DEBUG
 } // end member function GenerateManyBodySD
 
 // generate the M-scheme many-body state basis
 void TAManyBodySDManager::MSchemeGo(){
   if(fManyBodySDListM) return; // already called
 
-  GenerateManyBodySD(); // Generate all the many-body basis
   if(-9999 == f2M) TAException::Error("TAManyBodySDManager",
     "GenerateManyBodySD: f2M for M-scheme not assigned.");
-
-  // get the boundary of the MBSDs' M
-  short min2M = (*std::min_element(fManyBodySDVec.begin(), fManyBodySDVec.end(),
-    [](TAManyBodySD *a, TAManyBodySD *b){ return a->Get2M() < b->Get2M(); }))->Get2M();
-  short max2M = (*std::max_element(fManyBodySDVec.begin(), fManyBodySDVec.end(),
-    [](TAManyBodySD *a, TAManyBodySD *b){ return a->Get2M() < b->Get2M(); }))->Get2M();
-
-  if(f2M < min2M || f2M > max2M)
-    TAException::Error("TAManyBodySDManager",
-      "MSchemeGo: Input 2M: %d is not within [%d, %d]", f2M, min2M, max2M);
-
-  // select the MBSDs with the M value specified by users, and drop the others //
   fManyBodySDListM = new TAManyBodySDList(f2M);
-  for(TAManyBodySD *&p : fManyBodySDVec){
-    if(f2M == p->Get2M()) fManyBodySDListM->Add(p);
-    else{
-      delete p; p = nullptr; // so as to save memory, Feb 4th, 2021
-    }
-  } // end for over all the MBSDs
-  if(0 == fManyBodySDListM->GetNBasis()){
-    TAException::Warn("TAManyBodySDManager",
-      "MSchemeGo: fManyBodySDListM is empty in the end.");
-  }
+  GenerateManyBodySD(); // Generate all the many-body basis, plus filter
+
+  if(0 == fManyBodySDListM->GetNBasis()) TAException::Warn("TAManyBodySDManager",
+    "MSchemeGo: fManyBodySDListM is empty in the end.");
   // fManyBodySDListM->Print(); // DEBUG
   // fManyBodySDListM->PrintInBit(); // DEBUG
+  fManyBodySDListM->Save(); // save the mbsd TTree obj
 } // end of member function MSchemeGo
 
 TAManyBodySDList *TAManyBodySDManager::GetMBSDListM(){
-  if(!fManyBodySDListM || !fManyBodySDVec.size()) MSchemeGo();
+  if(!fManyBodySDListM) TAException::Warn("TAManyBodySDManager",
+    "GetMBSDListM: fManyBodySDListM nullptr. MSchemeGo() not called yet?");
   return fManyBodySDListM;
 }

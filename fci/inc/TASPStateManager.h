@@ -1,6 +1,6 @@
 /**
-	\file TASingleParticleStateManager.h
-	\class TASingleParticleStateManager
+	\file TASPStateManager.h
+	\class TASPStateManager
 	\brief A list of TASingleParticle objects, responsible for reading the user-input
 	single-particle (SP) state files, generating SP state objects, and managing the SP
 	states. Note that this is a singleton class.
@@ -11,8 +11,8 @@
 	\copyright SUNNY project, Anyang Normal University, IMP-CAS
 */
 
-#ifndef _TASingleParticleStateManager_h_
-#define _TASingleParticleStateManager_h_
+#ifndef _TASPStateManager_h_
+#define _TASPStateManager_h_
 
 #include <vector>
 #include <string>
@@ -20,11 +20,11 @@
 using std::vector;
 using std::string;
 
-class TASingleParticleStateManager{
+class TASPStateManager{
 public:
-	virtual ~TASingleParticleStateManager();
-	static TASingleParticleStateManager *Instance();
-	vector<TASingleParticleState *> &GetSPStateVec(){ return fSPStateVec; }
+	virtual ~TASPStateManager();
+	static TASPStateManager *Instance();
+	vector<TASPState *> &GetSPStateVec(){ return fSPStateVec; }
 	int GetNSPState() const;
 	/// \param file: the input file is of format as follows:
 	/// index n l 2j 2mj energy
@@ -32,10 +32,10 @@ public:
 	void LoadSPListFile(const string &file);
 
 protected:
-	TASingleParticleStateManager();
-	static TASingleParticleStateManager *kInstance;
+	TASPStateManager();
+	static TASPStateManager *kInstance;
 	string fFileIn;
-	vector<TASingleParticleState *> fSPStateVec;
+	vector<TASPState *> fSPStateVec;
 };
 
 #endif

@@ -7,8 +7,10 @@
 # Last modified: 2020/10/04
 ######################################################
 
-#find_package(ROOT REQUIRED)
-#include_directories(${ROOT_INCLUDE_DIRS})
+# Using ROOT libraries
+find_package(ROOT REQUIRED)
+include_directories(${ROOT_INCLUDE_DIRS})
+
 include_directories(inc)
 include_directories(../momd/inc)
 aux_source_directory(src LIB_SRCS)

@@ -16,6 +16,7 @@
 
 #include "TAHamiltonian.h"
 #include "TAManyBodySDList.h"
+#include "TAMatrix.h"
 
 class TAHPairing : public TAHamiltonian{
 public:
@@ -27,10 +28,12 @@ public:
   virtual double MatrixElement1N(int rr, int cc) override;
   virtual double MatrixElement2N(int rr, int cc) override;
   virtual double MatrixElement3N(int rr, int cc) override;
+  matrix *Matrix(); ///< construct the Hamiltonian matrix
 
 protected:
   /// H=\sum_n{delta*n*N_n} - GP_+P_-
   double fG, fDelta; ///< the interaction strength constant
+  matrix *fMatrix; ///< the pairing hamiltonian matrix
 };
 
 #endif

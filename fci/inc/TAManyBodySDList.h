@@ -15,9 +15,9 @@
 #ifndef _TAManyBodySDList_h_
 #define _TAManyBodySDList_h_
 
-#include <vector>
+#include "TAMBSDTree.h"
 
-class TAManyBodySD;
+class TASPState;
 
 using std::vector;
 
@@ -27,24 +27,28 @@ public:
 	virtual ~TAManyBodySDList();
 
 	short Get2M() const{ return f2M; }
-	vector<TAManyBodySD *> &GetManyBodySDVec(){ return fManyBodySDVec; }
-	void Add(TAManyBodySD *mbsd);
-	void Pairing(); /// remove those with broken pairs, i.e. >2 single particles
-	void Print() const;
-	void PrintInBit() const; ///< Print all the mbsd-s in bit mode
-	int GetNBasis() const{ return fManyBodySDVec.size(); }
-	TAManyBodySD *operator[](int i) const; ///< \retval fManyBodySDVec[i]
+	TAMBSDTree *GetMBSDTree(){ return fManyBodySDTree; }
+	bool MBSDFilter(unsigned long bit) const; ///< filter mbsds
+	void Add(unsigned long bit);
+	void Add(int *spsArr, int nParticle);
+	void Print();
+	void PrintInBit(); ///< Print all the mbsd-s in bit mode
+	unsigned long GetNBasis() const;
+	unsigned long Bit(unsigned long mbsdIndex);
+	unsigned long operator[](unsigned long mbsdIndex){ return Bit(mbsdIndex); }
+	TASPState *GetSPState(unsigned long mbsdIndex, int i);
+	void Save(){ fManyBodySDTree->Save(); } ///< save the many-body state tree
 
 	/// \retval <rr|a+_p * a_q|cc>, 1N force
-	int Integral(int rr, int p, int q, int cc) const;
+	int Integral(int rr, int p, int q, int cc);
 	/// \retval <rr|a+_p*a+_q * a_s*a_r|cc>, 2N force
-	int Integral(int rr, int p, int q, int s, int r, int cc) const;
+	int Integral(int rr, int p, int q, int s, int r, int cc);
 	/// \retval <rr|a+_p*a+_q*a+_r * a_u*a_t*a_s|cc>, 3N force
-	int Integral(int rr, int p, int q, int r, int u, int t, int s, int cc) const;
+	int Integral(int rr, int p, int q, int r, int u, int t, int s, int cc);
 
 protected:
 	short f2M; ///< the uniform M*2 for this list
-	vector<TAManyBodySD *> fManyBodySDVec;
+	TAMBSDTree *fManyBodySDTree;
 };
 
 #endif

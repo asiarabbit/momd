@@ -1,6 +1,6 @@
 /**
-	\file TASingleParticleState.C
-	\class TASingleParticleState
+	\file TASPState.C
+	\class TASPState
 	\brief Single particle state for a one-body Hamiltonian with a central force.
 	Labeled by n, l, j and mj. Used as a building basis for configuration
 	interaction calculations in quantum many-body problems.
@@ -13,19 +13,18 @@
 
 #include <iostream>
 #include <iomanip>
-#include "TASingleParticleState.h"
+#include "TASPState.h"
 
 using std::cout;
 using std::setw;
 
-TASingleParticleState::	TASingleParticleState(int index, short n, short l,
-		short _2j, short _2mj, double energy)
-     : fIndex(index), fn(n), fl(l), f2j(_2j), f2mj(_2mj), fEnergy(energy){}
+TASPState::	TASPState(int index, short n, short l, short _2j, short _2mj, double energy)
+		: fIndex(index), fn(n), fl(l), f2j(_2j), f2mj(_2mj), fEnergy(energy){}
 
-TASingleParticleState::~TASingleParticleState(){}
+TASPState::~TASPState(){}
 
 /// print the single particle state
-void TASingleParticleState::Print() const{
+void TASPState::Print() const{
 	cout << std::right;
 	cout << "index: " << setw(3) << fIndex;
 	cout << "   n: " << setw(2) << fn << "   l: " << setw(1) << fl;

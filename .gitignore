@@ -40,7 +40,7 @@
 # text files || content
 #*.txt
 
-# ignore directories
+# ignored directories
 build*/*
 docs/*
 Lab*/*

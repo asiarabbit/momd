@@ -18,7 +18,8 @@
 #include <bitset>
 
 using std::bitset;
-static const int NBIT = 32;
+
+const int NBIT = 32; ///< DO NOT set larger than 64 (ulong)
 
 class TABit : public bitset<NBIT>{
 public:

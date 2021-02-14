@@ -16,38 +16,33 @@
 
 #include "TABit.h"
 
-class TASingleParticleState;
+class TASPState;
 class TAManyBodySDManager;
 
 class TAManyBodySD{
 public:
-	TAManyBodySD(int index, int nParticle, int *SPState);
+	TAManyBodySD(unsigned long bit); ///< fPhase is set to 1
 	virtual ~TAManyBodySD();
-	short Get2M() const{ return f2M; } ///< \retval the total jz*2
+
+	short Get2M() const; ///< \retval the total jz*2
+	double GetEnergy() const; ///< \retval the total sp energy
 	const TABit &Bit() const{ return fBit; }
+
 	void Print() const; ///< self-display
 	void PrintInBit() const; ///< Print the many-body state in bit mode
+
+	void GetSPStateArr(int *p) const; ///< return the spstae array
+	TASPState *operator[](int i) const;
+	int GetNParticle() const{ return fBit.count(); }
 	/// note that this method works only if piared states are next to each other,
 	/// and SPStates are ordered in ManyBodySD
 	bool IsPaired() const; ///< \retval if there're broken pairs or not
-
-	TASingleParticleState *operator[](int i);
-	void SetIndex(int index){ fIndex = index; }
-	void UpdateSPStateArr(); ///< update fSPStateArr to fBit
-	void UpdateBit(); ///< update fBit to fSPStateArr
-	int *IntArr() const; ///< \retval fSPStateArr, update with fBit if necessary
-	int GetNParticle() const;
+	void SetBit(unsigned long bit){ fBit = bit; }
 
 	friend class TAManyBodySDManager;
 
 protected:
-	int fNParticle;
-	int fIndex; ///< index of the object
-	short f2M; ///< the total jz*2
-	double fEnergy; ///< the total energy of the SD
-	TABit fBit; // bit representation of this
-	/// Dynamical memory allocation. The length is the number of particles
-	int *fSPStateArr;
+	TABit fBit; ///< bit representation of this
 };
 
 #endif

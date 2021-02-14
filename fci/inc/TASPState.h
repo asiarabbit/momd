@@ -1,6 +1,6 @@
 /**
-	\file TASingleParticleState.h
-	\class TASingleParticleState
+	\file TASPState.h
+	\class TASPState
 	\brief Single particle state for a one-body Hamiltonian with a central force.
 	Labeled by n, l, j and mj. Used as a building basis for configuration
 	interaction calculations in quantum many-body problems.
@@ -11,14 +11,14 @@
 	\copyright SUNNY project, Anyang Normal University, IMP-CAS
 */
 
-#ifndef _TASingleParticleState_h_
-#define _TASingleParticleState_h_
+#ifndef _TASPState_h_
+#define _TASPState_h_
 
-class TASingleParticleState{
+class TASPState{
 public:
-	TASingleParticleState(int index, short n, short l,
+	TASPState(int index, short n, short l,
 		short _2j, short _2mj, double energy);
-	virtual ~TASingleParticleState();
+	virtual ~TASPState();
 	short Get2Mj() const{ return f2mj; } /// \return 2*mj
 	short GetN() const{ return fn; } // \retval the number of nodes
 	double GetEnergy() const{ return fEnergy; }

@@ -7,11 +7,12 @@
 # Last modified: 2020/10/04, SUN Yazhou
 ######################################################
 
-# include_directories(${ROOT_INCLUDE_DIRS}) # ROOT header path
+find_package(ROOT REQUIRED)
+include_directories(${ROOT_INCLUDE_DIRS}) # ROOT header path
 include_directories(${PROJECT_SOURCE_DIR}/fci/inc) # SUNNY header path
 include_directories(${PROJECT_SOURCE_DIR}/momd/inc)
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
-set(LIB_LIST libmomd libsunny) # ${ROOT_LIBRARIES}
+set(LIB_LIST libmomd libsunny ${ROOT_LIBRARIES})
 
 add_executable(te test.cxx)
 target_link_libraries(te ${LIB_LIST})

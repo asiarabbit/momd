@@ -1,7 +1,7 @@
 /**
-	\file TASingleParticleStateManager.C
-	\class TASingleParticleStateManager
-	\brief A list of TASingleParticleState objects, responsible for reading the
+	\file TASPStateManager.C
+	\class TASPStateManager
+	\brief A list of TASPState objects, responsible for reading the
 	 user-input single-particle (SP) state files, generating SP state objects,
 	and managing the SP states. Note that this is a singleton class.
 	\author SUN Yazhou
@@ -14,24 +14,24 @@
 #include <string>
 #include <cstring>
 #include <fstream>
-#include "TASingleParticleState.h"
-#include "TASingleParticleStateManager.h"
+#include "TASPState.h"
+#include "TASPStateManager.h"
 #include "TAException.h"
 
 using std::ifstream;
 using std::string;
 
-TASingleParticleStateManager *TASingleParticleStateManager::kInstance = nullptr;
+TASPStateManager *TASPStateManager::kInstance = nullptr;
 
-TASingleParticleStateManager::TASingleParticleStateManager(){}
+TASPStateManager::TASPStateManager(){}
 
-TASingleParticleStateManager *TASingleParticleStateManager::Instance(){
-	if(!kInstance) kInstance = new TASingleParticleStateManager();
+TASPStateManager *TASPStateManager::Instance(){
+	if(!kInstance) kInstance = new TASPStateManager();
 	return kInstance;
 }
 
-TASingleParticleStateManager::~TASingleParticleStateManager(){
-	for(TASingleParticleState *&p : fSPStateVec){
+TASPStateManager::~TASPStateManager(){
+	for(TASPState *&p : fSPStateVec){
 		if(p){
 			delete p; p = nullptr;
 		} // end if
@@ -39,9 +39,9 @@ TASingleParticleStateManager::~TASingleParticleStateManager(){
 	fSPStateVec.clear();
 } // end of the destructor
 
-int TASingleParticleStateManager::GetNSPState() const{
+int TASPStateManager::GetNSPState() const{
 	if(!fSPStateVec.size()){
-		TAException::Warn("TASingleParticleStateManager",
+		TAException::Warn("TASPStateManager",
 			"GetNSPState: The fSPStateVec is empty.");
 	}
 	return fSPStateVec.size();
@@ -59,12 +59,12 @@ inline int skipCrap(const char *s){
 /// \param file: the input file is of format as follows:
 /// index n l 2j 2mj energy
 /// Lines starting with # are ignored
-void TASingleParticleStateManager::LoadSPListFile(const string &file){
+void TASPStateManager::LoadSPListFile(const string &file){
 	fFileIn = file;
 	const char *filename = file.c_str();
 	ifstream ff(filename);
 	if(!ff.is_open()){
-		TAException::Error("TASingleParticleStateManager",
+		TAException::Error("TASPStateManager",
 			"LoadSPListFile: input file %s open error.", file);
 	}
 	char line[512] = "";
@@ -76,11 +76,11 @@ void TASingleParticleStateManager::LoadSPListFile(const string &file){
 		int index, n, l, two_j, two_mj; double energy;
 		sscanf(line, "%d %d %d %d %d %lg", &index, &n, &l, &two_j, &two_mj, &energy);
 		fSPStateVec.push_back(
-			new TASingleParticleState(index, n, l, two_j, two_mj, energy));
+			new TASPState(index, n, l, two_j, two_mj, energy));
 	} // end while
 	ff.close();
 
-	// TAException::Info("TASingleParticleStateManager",
+	// TAException::Info("TASPStateManager",
 	// 	"LoadSPListFile: \nDisplay the SP States read in ~");
-	// for(TASingleParticleState *sp : fSPStateVec) sp->Print(); // DEBUG
+	// for(TASPState *sp : fSPStateVec) sp->Print(); // DEBUG
 } // end of member function LoadSPListFile()

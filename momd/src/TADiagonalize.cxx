@@ -209,7 +209,7 @@ void TADiagonalize::TridiagQLImplicit(double *d, double *e, int n, matrix &z){
   for(int i = 1; i < n; i++) e[i-1] = e[i]; // so that e starts from e[0], just for convinence
   e[n-1] = 0.;
   // starts the implicit shifts A-k_l*E //
-  // l stands for the order of the l-th eigenvalue, with k_l close to the eigeivalue //
+  // l stands for the order of the l-th eigenvalue, with k_l close to the eigenvalue //
   for(int l = 0; l < n; l++){
     int iter = 0, m;
     do{ // each do-while implements a QL transform, i.e. A'=Q^T.A.Q, until the 2x2
