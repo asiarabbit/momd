@@ -30,7 +30,7 @@ public:
   TAHamiltonian(const string &configFile);
   virtual ~TAHamiltonian();
   /// \retval calculate and return the matrix form of the hamiltonian
-  unsigned long GetNBasis() const;
+  unsigned long long GetNBasis() const;
 
   /// assign the matrix element (*fMatrix)[i][j]
   virtual double MatrixElement(int row, int column);

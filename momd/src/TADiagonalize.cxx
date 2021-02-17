@@ -285,7 +285,8 @@ void TADiagonalize::Lanczos(const matrix &a, int n, double *d, matrix &z, double
   double e[np]; vector<double> alpha, beta;
   // prepare for the start of the iterations //
   matrix v(n), q(n), r(n); // q_{j-1}, qj, q_{j+1}, 3 basis vectors
-  for(int i = n; i--;) if(x) q[i][0] = x[i]; else q[i][0] = 1.;
+  for(int i = n; i--;) if(x) q[i][0] = x[i];
+  q[0][0] = 1.;
   q.cv(0).normalize(); // normalize the trial vector
   matrix Q(q); // to store the Lanczos vectors
   a.DotProduct(q, r); // r = a*q
@@ -293,7 +294,7 @@ void TADiagonalize::Lanczos(const matrix &a, int n, double *d, matrix &z, double
   r.SelfAdd(-alpha[0], q); // r -= alphaj*qj
   beta.push_back(r.cv(0).norm()); // the first off-diagonal of Tk
   // the trial vector is an eigenvector
-  if(fabs(beta[0])+1. == 1.){ d[0] = alpha[0]; return; }
+  if(fabs(beta[0]) < EPS){ d[0] = alpha[0]; z.cv(0) = q.cv(0); return; }
   // OK, here we commence the iteration //
   for(int j = 1; j <= nm; j++){
     v = q; // q_{j-1}
@@ -331,8 +332,8 @@ void TADiagonalize::LanczosPurge(const matrix &a, int n, double *d, matrix &z, d
   static const double EPS = 1.e-8; // eigenvalue accuracy standard
   static const int NMAXRST = 100; // maximum restart times
   // number of wanted eigenpairs and dimension for the plain Lanczos
-  static const int J = 4, K = J + 3; // J, K: number of the wanted eigenpairs and candidates
-  if(n <= 7) return Lanczos(a,n,d,z,x); // we deal with a little bit larger matrix
+  static const int J = 3, K = J + 2; // J, K: number of the wanted eigenpairs and candidates
+  if(n <= K) return Lanczos(a,n,d,z,x); // we deal with a little bit larger matrix
   const int NMAX = 100; // maximum number of iterations
   const int nm = min(n, NMAX);
   const int np = nm+1; // maximum dimension of the final Tk
@@ -350,7 +351,7 @@ void TADiagonalize::LanczosPurge(const matrix &a, int n, double *d, matrix &z, d
   r.SelfAdd(-alpha[0], q); // r = A*q-alphaj*qj
   beta.push_back(r.cv(0).norm()); // the first off-diagonal of Tk
   // FIXME: if the trial vector is an eigenvector, return
-  if(fabs(beta[0])+alpha[0] == alpha[0]){ d[0] = alpha[0]; return; }
+  if(fabs(beta[0]) < EPS){ d[0] = alpha[0]; z.cv(0) = q.cv(0); return; }
   // commence the iteration //
   for(int j = 1; j <= nm; j++){ // j: n of Lanczos vectors, so it'd be always far from nm
     v = q; // q_{j-1}
@@ -409,6 +410,8 @@ void TADiagonalize::LanczosPurge(const matrix &a, int n, double *d, matrix &z, d
       j -= K-J; // one more thing, squeeze the loop for the purge
       j++; // j++: restarting itself moves a step forward in the Lanczos iteration
       restarted = true; restartCnt++;
+      if(restartCnt >= NMAXRST)
+        TAException::Info("TADiagonalize", "LanczosPurge: Too many restarts occurred.");
     } // end if(j == K)
   } // end for over j
   TAException::Info("TADiagonalize", "LanczosPurge: Too many iterations occurred.");

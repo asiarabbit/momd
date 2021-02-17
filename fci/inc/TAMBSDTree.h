@@ -25,13 +25,15 @@ public:
   TAMBSDTree(const string &name = "mbsdList", const string &title = "MBSDList");
   virtual ~TAMBSDTree(){}
 
-  unsigned long GetMBSDInBit(unsigned long mbsdIndex);
-  unsigned long operator[](unsigned long mbsdIndex){ return GetMBSDInBit(mbsdIndex); }
-  void Fill(unsigned long bit){ fBit = bit; fTree->Fill(); }
+  unsigned long long GetMBSDInBit(unsigned long long mbsdIndex);
+  unsigned long long operator[](unsigned long long mbsdIndex){ return GetMBSDInBit(mbsdIndex); }
+  void Fill(unsigned long long bit);
+  virtual void SetBranchAddress() override;
+  virtual void CreateBranch() override;
 
 protected:
-  // unsigned long fR; ///< row number
-  unsigned long fBit; ///< the many-body Slater determinant in bit representation
+  // unsigned long long fR; ///< row number
+  unsigned long long fBit; ///< the many-body Slater determinant in bit representation
   // char fSelection[512]; ///< ROOT selection, e.g. "r==3"
 };
 

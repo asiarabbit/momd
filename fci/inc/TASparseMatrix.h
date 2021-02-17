@@ -28,8 +28,12 @@ public:
 
   void DotProduct(const vec_t<double> &s, TASparseVec &r); // r = (*this)*s
   void DotProduct(const matrix &s, TASparseMatrix &r); // r = (*this)*s
-  void PushBackColumn(TASparseVec &r);
+  void PushBackColumn(const TASparseVec &r);
+  void MoveBack(TASparseMatrix &r); ///< only transfer ownership. r is emptied.
   void EraseColumn(int c1, int c2); ///< Erase [c1, c2)
+  void Print() const;
+  void Clear();
+  void Save(); ///< save all the trees
 };
 
 #endif

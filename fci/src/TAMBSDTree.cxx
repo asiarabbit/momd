@@ -17,11 +17,24 @@
 // #include "TSQLRow.h"
 
 TAMBSDTree::TAMBSDTree(const string &name, const string &title) : TATreeCol(name, title){
-  // Branch("r", &fR, "r/l");
-  fTree->Branch("bit", &fBit, "bit/l");
+  CreateBranch();
 } // end of constructor}
 
-unsigned long TAMBSDTree::GetMBSDInBit(unsigned long mbsdIndex){
-  fTree->GetEntry(mbsdIndex);
+unsigned long long TAMBSDTree::GetMBSDInBit(unsigned long long mbsdIndex){
+  GetEntry(mbsdIndex);
   return fBit;
 } // end of member function GetElement
+
+void TAMBSDTree::Fill(unsigned long long bit){
+  SetBranchAddress();
+  fBit = bit; fTree->Fill();
+}
+
+void TAMBSDTree::CreateBranch(){
+  fTree->Branch("bit", &fBit, "bit/l");
+}
+void TAMBSDTree::SetBranchAddress(){
+  if((void*)(&fBit) == (void*)fTree->GetBranch("bit")->GetAddress()) return; // already set
+
+  fTree->SetBranchAddress("bit", &fBit);
+}

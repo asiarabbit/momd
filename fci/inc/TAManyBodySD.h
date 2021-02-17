@@ -21,7 +21,7 @@ class TAManyBodySDManager;
 
 class TAManyBodySD{
 public:
-	TAManyBodySD(unsigned long bit); ///< fPhase is set to 1
+	TAManyBodySD(unsigned long long bit); ///< fPhase is set to 1
 	virtual ~TAManyBodySD();
 
 	short Get2M() const; ///< \retval the total jz*2
@@ -37,7 +37,7 @@ public:
 	/// note that this method works only if piared states are next to each other,
 	/// and SPStates are ordered in ManyBodySD
 	bool IsPaired() const; ///< \retval if there're broken pairs or not
-	void SetBit(unsigned long bit){ fBit = bit; }
+	void SetBit(unsigned long long bit){ fBit = bit; }
 
 	friend class TAManyBodySDManager;
 

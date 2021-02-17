@@ -32,12 +32,14 @@ TAManyBodySDList::~TAManyBodySDList(){
   }
 } // end of the destructor
 
-bool TAManyBodySDList::MBSDFilter(unsigned long bit) const{
+bool TAManyBodySDList::MBSDFilter(unsigned long long bit) const{
   TAManyBodySD m(bit);
-  return m.IsPaired() && m.Get2M() == f2M;
+  return
+    // m.IsPaired() &&
+    m.Get2M() == f2M;
 }
 
-void TAManyBodySDList::Add(unsigned long bit){
+void TAManyBodySDList::Add(unsigned long long bit){
   if(MBSDFilter(bit)) fManyBodySDTree->Fill(bit);
 }
 
@@ -46,7 +48,7 @@ void TAManyBodySDList::Add(int *spsArr, int nParticle){
   Add(bit.to_ulong());
 }
 
-unsigned long TAManyBodySDList::Bit(unsigned long mbsdIndex){
+unsigned long long TAManyBodySDList::Bit(unsigned long long mbsdIndex){
   return fManyBodySDTree->GetMBSDInBit(mbsdIndex);
 }
 
@@ -73,12 +75,12 @@ void TAManyBodySDList::PrintInBit(){
   cout << f2M << "." << endl;
 }
 
-unsigned long TAManyBodySDList::GetNBasis() const{
+unsigned long long TAManyBodySDList::GetNBasis() const{
   return fManyBodySDTree->GetEntries();
 }
 
 ///< note that index is the mbsd index
-TASPState *TAManyBodySDList::GetSPState(unsigned long mbsdIndex, int i){
+TASPState *TAManyBodySDList::GetSPState(unsigned long long mbsdIndex, int i){
   static vector<TASPState *> &spv =
     TASPStateManager::Instance()->GetSPStateVec();
   if(i >= int(spv.size()))

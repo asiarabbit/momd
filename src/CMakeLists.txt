@@ -24,7 +24,3 @@ target_link_libraries(mbsd ${LIB_LIST})
 # hamiltonian matrix establishment
 add_executable(ham hamiltonian.cxx)
 target_link_libraries(ham ${LIB_LIST})
-
-# general unit test
-add_executable(tef test.cxx)
-target_link_libraries(tef ${LIB_LIST})

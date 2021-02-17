@@ -21,6 +21,7 @@
 
 class TAHamiltonian;
 class TASparseMatrix;
+class TASparseVec;
 
 class TALanczos{
 public:
@@ -34,16 +35,38 @@ public:
   /// Given input matrix a[0..n-1][0..n-1], the routine returns first fiew (usually <=10)
   /// eigenvalues in d and the corresponding eigenvectors in z
   /// d should be at least of length 50, for it is drafted in the program
-  static void Lanczos(TAHamiltonian &H, double *d, TASparseMatrix &z);
+  /// \param nPair: number of eigenpairs wanted. Still the function will return as long
+  /// \param x: the initial vector to initiate the iteration
+  static void Lanczos(TAHamiltonian &H, double *d, TASparseMatrix &z, TASparseVec *x = nullptr,
+    int nPair = 2);
   /// Lanczos method featuring Ritz-pairs purging. Unwanted Ritz-pairs are deflated,
   /// leaving a smaller Krylov space, where the Lanczos orthogonalization resumes
   /// so that the unwanted Ritz-pairs are purged from the final constructed Krylov
   /// space. This would speed the convergence to the wanted Ritz-pairs compared with
   /// plain Lanczos algorithm. NOTE that we assume the largest eigenvalues are wanted
+  /// \param nPair: number of eigenpairs wanted. Still the function will return as long
+  /// \param x: the initial vector to initiate the iteration
+  /// as encountering an invariant space, even before finding nPair eigenpairs. For this
+  /// drawback, users are recommended with member method PurgeRestart(...)
   /// Ref.: http://people.inf.ethz.ch/arbenz/ewp/Lnotes/lsevp.pdf, p212
   /// Ref.: K. Wu and H. D. Simon,SIAM J. Matrix Anal. Appl., 22 (2000), pp. 602–616
-  static void LanczosPurge(TAHamiltonian &H, double *d, TASparseMatrix &z);
+  static void LanczosPurge(TAHamiltonian &H, double *d, TASparseMatrix &z, TASparseVec *x = nullptr,
+    int nPair = 3);
 
+  /// restart LanczosPurge with a new initial vector orthorgonal to the existing
+  /// invariant space, with the previous eigenpairs stored.
+  /// \param nPair: number of eigenpairs wanted
+  static void PurgeRestart(TAHamiltonian &H, double *d, TASparseMatrix &z, int nPair = 2);
+
+  /// devise a vector x, such that it is orthogonal to span{z}, and has increasing
+  /// weight upwards (i.e., the former coordinates have more weight than the latter)
+  /// \param n: the dimension of the matrix to be diagonalized
+  static void InitializeVector(TASparseVec &x, TASparseMatrix &z, int n);
+
+  /// note that eigenvalues are not ordered in Jacobi. This routine below sorts
+  /// the input eigenvalues into descending order, and rearranges the eigenvectors
+  /// correspondingly. The method is straight insertion
+  static void EigenSort(double *d, TASparseMatrix &v, int n);
 };
 
 #endif

@@ -28,15 +28,15 @@ public:
 
 	short Get2M() const{ return f2M; }
 	TAMBSDTree *GetMBSDTree(){ return fManyBodySDTree; }
-	bool MBSDFilter(unsigned long bit) const; ///< filter mbsds
-	void Add(unsigned long bit);
+	bool MBSDFilter(unsigned long long bit) const; ///< filter mbsds
+	void Add(unsigned long long bit);
 	void Add(int *spsArr, int nParticle);
 	void Print();
 	void PrintInBit(); ///< Print all the mbsd-s in bit mode
-	unsigned long GetNBasis() const;
-	unsigned long Bit(unsigned long mbsdIndex);
-	unsigned long operator[](unsigned long mbsdIndex){ return Bit(mbsdIndex); }
-	TASPState *GetSPState(unsigned long mbsdIndex, int i);
+	unsigned long long GetNBasis() const;
+	unsigned long long Bit(unsigned long long mbsdIndex);
+	unsigned long long operator[](unsigned long long mbsdIndex){ return Bit(mbsdIndex); }
+	TASPState *GetSPState(unsigned long long mbsdIndex, int i);
 	void Save(){ fManyBodySDTree->Save(); } ///< save the many-body state tree
 
 	/// \retval <rr|a+_p * a_q|cc>, 1N force

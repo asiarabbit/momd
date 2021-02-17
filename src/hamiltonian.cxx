@@ -7,16 +7,24 @@
 #include <iostream>
 #include "TAHPairing.h"
 #include "TADiagonalize.h"
-#include "TATreeCol.h"
+#include "TALanczos.h"
+#include "TASparseMatrix.h"
 
 using std::cout;
 using std::endl;
 
 int main(){
 	TAHPairing *pair = new TAHPairing("../config/input.txt");
-	const matrix *H = pair->Matrix();
-	H->Print();
+	pair->Matrix()->Print();
 
+	const short n = pair->GetNBasis() < 30 ? pair->GetNBasis() : 30;
+	TASparseMatrix z; double d[n*2]{};
+	TALanczos::PurgeRestart(*pair, d, z, n);
+
+	for(int i = 0; i < n; i++) cout << d[i] << endl;
+	z.Print();
+
+	z.Save();
 	TATreeCol::CloseFile();
 	return 0;
 } // end of the main function

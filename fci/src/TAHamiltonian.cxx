@@ -36,7 +36,7 @@ TAHamiltonian::TAHamiltonian(const string &configFile)
 
 TAHamiltonian::~TAHamiltonian(){} // end of the destructor
 
-unsigned long TAHamiltonian::GetNBasis() const{
+unsigned long long TAHamiltonian::GetNBasis() const{
   return fMBSDListM->GetNBasis();
 } // end of member function GetNBasis
 
@@ -46,14 +46,14 @@ double TAHamiltonian::MatrixElement(int rr, int cc){
     MatrixElement3N(rr, cc);
 } // end of member function MatrixElement
 
+// r = H*v
 void TAHamiltonian::DotProduct(TASparseVec &v, TASparseVec &r){
   const int n = GetNBasis();
-  r.Clear(); // release the
+  r.Clear(); // clear all the entries
   double t, e1, e2;
   for(int i = 0; i < n; i++){
     t = 0.;
-    for(int j = 0; j < n; j++)
-      if(!(e1 = MatrixElement(i,j)) && (!(e2 = v[j]))) t += e1 * e2;
+    for(int j = 0; j < n; j++) if((e1 = MatrixElement(i,j)) && (e2 = v[j])) t += e1 * e2;
     r.Fill(i,t);
   } // end for over i
 } // end member function DotProduct

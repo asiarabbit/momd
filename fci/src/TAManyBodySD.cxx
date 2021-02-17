@@ -22,7 +22,7 @@
 using std::cout;
 using std::setw;
 
-TAManyBodySD::TAManyBodySD(unsigned long bit) : fBit(bit){
+TAManyBodySD::TAManyBodySD(unsigned long long bit) : fBit(bit){
 } // end of the constructor
 
 TAManyBodySD::~TAManyBodySD(){} // end of the destructor

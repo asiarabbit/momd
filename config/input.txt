@@ -7,6 +7,6 @@
 # configuration file for single particle state space
 ../config/paringSP.txt
 # number of particles in the many-body system
-4
+5
 # the fixed 2*M for M-scheme in many-body basis
-0
+1

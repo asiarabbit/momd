@@ -112,7 +112,7 @@ void TAManyBodySDManager::GenerateManyBodySD(){
   delete [] SPStateVec;
   ////////////////// END of the odometer algorithm /////////////////////
 
-  unsigned long nb = fManyBodySDListM->GetNBasis();
+  unsigned long long nb = fManyBodySDListM->GetNBasis();
   if(!nb) TAException::Error("TAManyBodySDManager",
       "GenerateManyBodySD: After called, still no ManyBodySD is generated.");
 
